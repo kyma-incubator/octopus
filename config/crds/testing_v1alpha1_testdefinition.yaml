@@ -1,0 +1,54 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: testdefinitions.testing.kyma-project.io
+spec:
+  group: testing.kyma-project.io
+  names:
+    kind: TestDefinition
+    plural: testdefinitions
+  scope: Namespaced
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            components:
+              description: List of components this test depends on.
+              items:
+                type: string
+              type: array
+            skip:
+              description: If there are some problems with given test, we add possibility
+                to don't execute them On Testsuite level such test should be marked
+                as a skipped
+              type: boolean
+            timeout:
+              description: Test should be interrupted after the timeout. On test suite
+                level such test should be marked as a timeouted
+              type: object
+          type: object
+        status:
+          type: object
+  version: v1alpha1
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

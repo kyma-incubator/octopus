@@ -1,0 +1,17 @@
+---
+apiVersion: testing.kyma-project.io/v1alpha1
+kind: TestSuite
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: testsuite-sample
+spec:
+  # Add fields here
+  concurrency_level: 2
+  test_names_selector:
+  - name: test-kubeless
+    namespace: kyma-system
+  suite_timeout: 10m
+  default_test_timeout: 5m
+  repeat: 2
+  max_retries: 3
