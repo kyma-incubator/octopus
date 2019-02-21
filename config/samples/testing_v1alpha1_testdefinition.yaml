@@ -1,0 +1,21 @@
+---
+apiVersion: testing.kyma-project.io/v1alpha1
+kind: TestDefinition
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: test-kubeless
+spec:
+  skip: n
+  disable_concurrency: n
+  components:
+    - kubeless
+    - service-catalog
+    - service-catalog-addons
+  timeout: 3m
+  pod_spec:
+    containers:
+      - name: test
+        image: alpine:latest
+        command:
+          - "pwd"
