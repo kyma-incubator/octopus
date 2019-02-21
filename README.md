@@ -16,14 +16,6 @@ Use the following tools to set up the project:
 * The latest version of [Docker](https://www.docker.com/)
 * The latest version of [Mockery](https://github.com/vektra/mockery) 
 
-## Installation
-
-TBD
-
-## Usage
-
-TBD 
-
 ## Development
 
 ### Install dependencies
