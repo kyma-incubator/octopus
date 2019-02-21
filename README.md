@@ -29,5 +29,5 @@ make resolve
 To test your changes before each commit, use the following command:
 
 ```bash
-make test
+make test  
 ```
