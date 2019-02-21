@@ -39,13 +39,10 @@ vet:
 
 # Generate code
 generate:
-ifndef GOPATH
-	$(error GOPATH not defined, please define GOPATH. Run "go help gopath" to learn more about GOPATH)
-endif
 	go generate ./pkg/... ./cmd/...
 
 # Build the docker image
-docker-build: test
+docker-build: resolve test
 	docker build . -t ${IMG}
 	@echo "updating kustomize image patch file for manager resource"
 	sed -i'' -e 's@image: .*@image: '"${IMG}"'@' ./config/default/manager_image_patch.yaml
@@ -53,3 +50,8 @@ docker-build: test
 # Push the docker image
 docker-push:
 	docker push ${IMG}
+
+### Custom targets
+# Resolve dependencies
+resolve:
+	dep ensure -v -vendor-only

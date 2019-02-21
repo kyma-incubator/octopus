@@ -689,7 +689,7 @@
     "pkg/namer",
     "pkg/util"
   ]
-  revision = "095ce2f23e83e3ee87fb5ff612fabb05e9df0155"
+  revision = "de43d2cef46a5e975bf33bcb2e441c8309b2e1b3"
 
 [[projects]]
   branch = "master"
