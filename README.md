@@ -2,7 +2,7 @@
 
 ## Overview
 
-Octopus is a testing framework that allows to run tests defined as a Dokcer images on running cluster.
+Octopus is a testing framework that allows running tests defined as Docker images on a running cluster.
 Think about Octopus as a `helm test` on steroids.
 
 ## Prerequisites
