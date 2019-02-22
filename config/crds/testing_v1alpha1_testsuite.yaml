@@ -28,13 +28,54 @@ spec:
           type: object
         spec:
           properties:
+            componentsSelector:
+              description: Will run every test that depends of any of the component
+                listed here
+              items:
+                type: string
+              type: array
+            concurrencyLevel:
+              description: How many tests we want to execute at the same time. Depends
+                on cluster size and it's load
+              format: int64
+              type: integer
+            defaultTestTimeout:
+              description: If specific TestDefinition does not define timeout, use
+                this one
+              type: object
+            maxRetries:
+              description: In case of a failed test, how many times it will be retried.
+                If test failed and on retry it succeeded, Test Suite should be marked
+                as a succeeded.
+              format: int64
+              type: integer
             repeat:
               description: Should I repeat every test? Default value will be 1
               format: int64
               type: integer
+            suiteTimeout:
+              description: Running all tests from suite cannot take more time that
+                specified here
+              type: object
+            testNamesSelector:
+              description: You can specify test names explicitly.
+              items:
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              type: array
           type: object
         status:
           properties:
+            completionTime:
+              format: date-time
+              type: string
             conditions:
               items:
                 properties:
@@ -94,6 +135,9 @@ spec:
                 - retries
                 type: object
               type: array
+            startTime:
+              format: date-time
+              type: string
           type: object
   version: v1alpha1
 status:

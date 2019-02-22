@@ -7,13 +7,13 @@ metadata:
   name: test-kubeless
 spec:
   skip: n
-  disable_concurrency: n
+  disableConcurrency: n
   components:
     - kubeless
     - service-catalog
     - service-catalog-addons
   timeout: 3m
-  pod_spec:
+  podSpec:
     containers:
       - name: test
         image: alpine:latest
