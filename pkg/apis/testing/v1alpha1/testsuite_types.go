@@ -24,24 +24,22 @@ import (
 
 // TestSuiteSpec defines the desired state of TestSuite
 type TestSuiteSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 	// How many tests we want to execute at the same time.
 	// Depends on cluster size and it's load
-	ConcurrencyLevel int64 `json:"concurrency_level,omitempty"`
+	ConcurrencyLevel int64 `json:"concurrencyLevel,omitempty"`
 	// You can specify test names explicitly.
-	TestNamesSelector []NamespacedTest `json:"test_name_selector,omitempty"`
+	TestNamesSelector []NamespacedTest `json:"testNamesSelector,omitempty"`
 	// Will run every test that depends of any of the component listed here
-	ComponentsSelector []string `json:"components_selector,omitempty"`
+	ComponentsSelector []string `json:"componentsSelector,omitempty"`
 	// Running all tests from suite cannot take more time that specified here
-	SuiteTimeout *metav1.Duration `json:"suite_timeout,omitempty"`
+	SuiteTimeout *metav1.Duration `json:"suiteTimeout,omitempty"`
 	// If specific TestDefinition does not define timeout, use this one
-	DefaultTestTimeout *metav1.Duration `json:"default_test_timeout,omitempty"`
+	DefaultTestTimeout *metav1.Duration `json:"defaultTestTimeout,omitempty"`
 	// Should I repeat every test? Default value will be 1
 	Repeat int64 `json:"repeat,omitempty"`
 	// In case of a failed test, how many times it will be retried.
 	// If test failed and on retry it succeeded, Test Suite should be marked as a succeeded.
-	MaxRetries int64 `json:"max_retries,omitempty"`
+	MaxRetries int64 `json:"maxRetries,omitempty"`
 }
 
 type NamespacedTest struct {
@@ -51,10 +49,8 @@ type NamespacedTest struct {
 
 // TestSuiteStatus defines the observed state of TestSuite
 type TestSuiteStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	StartTime      metav1.Time          `json:"start_time"`
-	CompletionTime *metav1.Time         `json:"completion_time"`
+	StartTime      *metav1.Time         `json:"startTime,omitempty"`
+	CompletionTime *metav1.Time         `json:"completionTime,omitempty"`
 	Conditions     []TestSuiteCondition `json:"conditions,omitempty"`
 	Results        []TestResult         `json:"results,omitempty"`
 }

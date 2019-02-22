@@ -7,11 +7,11 @@ metadata:
   name: testsuite-sample
 spec:
   # Add fields here
-  concurrency_level: 2
-  test_names_selector:
+  concurrencyLevel: 2
+  testNamesSelector:
   - name: test-kubeless
     namespace: kyma-system
-  suite_timeout: 10m
-  default_test_timeout: 5m
+  suiteTimeout: 10m
+  defaultTestTimeout: 5m
   repeat: 2
-  max_retries: 3
+  maxRetries: 3

@@ -25,8 +25,6 @@ import (
 
 // TestDefinitionSpec defines the desired state of TestDefinition
 type TestDefinitionSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 	PodSpec v1.PodSpec `json:"pod_spec"`
 	// If there are some problems with given test, we add possibility to don't execute them
 	// On Testsuite level such test should be marked as a skipped
