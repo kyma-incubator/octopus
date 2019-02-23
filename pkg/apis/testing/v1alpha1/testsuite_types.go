@@ -31,6 +31,7 @@ type TestSuiteSpec struct {
 	TestNamesSelector []NamespacedTest `json:"testNamesSelector,omitempty"`
 	// Will run every test that depends of any of the component listed here
 	ComponentsSelector []string `json:"componentsSelector,omitempty"`
+	AllTestsSelector   bool     `json:"allTestsSelector"`
 	// Running all tests from suite cannot take more time that specified here
 	SuiteTimeout *metav1.Duration `json:"suiteTimeout,omitempty"`
 	// If specific TestDefinition does not define timeout, use this one
@@ -65,7 +66,7 @@ const (
 	StatusUnknown Status = "unknown"
 
 	// SuiteUninitialized is when suite has not yet determined tests to run
-	SuiteUninitialized TestSuiteConditionType = "pending"
+	SuiteUninitialized TestSuiteConditionType = "uninitialized"
 	// When test are running
 	SuiteRunning TestSuiteConditionType = "running"
 	// When suite is finished and there were configuration problems, like missing test image
