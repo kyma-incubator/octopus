@@ -11,6 +11,8 @@ spec:
     kind: TestDefinition
     plural: testdefinitions
   scope: Namespaced
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       properties:
@@ -28,20 +30,15 @@ spec:
           type: object
         spec:
           properties:
-            components:
-              description: List of components this test depends on.
-              items:
-                type: string
-              type: array
+            podSpec:
+              type: object
             skip:
               description: If there are some problems with given test, we add possibility
                 to don't execute them On Testsuite level such test should be marked
                 as a skipped
               type: boolean
-            timeout:
-              description: Test should be interrupted after the timeout. On test suite
-                level such test should be marked as a timeouted
-              type: object
+          required:
+          - podSpec
           type: object
         status:
           type: object

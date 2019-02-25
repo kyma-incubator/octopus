@@ -5,6 +5,7 @@ metadata:
   labels:
     controller-tools.k8s.io: "1.0"
   name: testsuite-sample
+  namespace: default
 spec:
   # Add fields here
   concurrencyLevel: 2
@@ -15,3 +16,4 @@ spec:
   defaultTestTimeout: 5m
   repeat: 2
   maxRetries: 3
+  allTestsSelector: y

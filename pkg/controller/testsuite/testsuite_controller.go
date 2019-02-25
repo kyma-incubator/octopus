@@ -18,11 +18,13 @@ package testsuite
 import (
 	"context"
 	testingv1alpha1 "github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
+	"github.com/kyma-incubator/octopus/pkg/controller/services"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -45,7 +47,15 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileTestSuite{Client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	st := services.NewStatus(&services.Now{})
+	return &ReconcileTestSuite{
+		Client:            mgr.GetClient(),
+		scheme:            mgr.GetScheme(),
+		statusService:     st,
+		reporter:          services.NewDDReporter(mgr.GetClient()),
+		definitionService: services.NewDefinitions(mgr.GetClient()),
+		scheduler:         services.NewScheduler(mgr.GetClient(), mgr.GetClient(), st, mgr.GetScheme()),
+	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -64,7 +74,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	// TODO(user): Modify this to be the types you create
 	// Uncomment watch a Deployment created by TestSuite - change this for objects you create
-	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
+	err = c.Watch(&source.Kind{Type: &v1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &testingv1alpha1.TestSuite{},
 	})
@@ -80,7 +90,11 @@ var _ reconcile.Reconciler = &ReconcileTestSuite{}
 // ReconcileTestSuite reconciles a TestSuite object
 type ReconcileTestSuite struct {
 	client.Client
-	scheme *runtime.Scheme
+	scheme            *runtime.Scheme
+	statusService     *services.Status
+	reporter          *services.DDReporter
+	scheduler         *services.Scheduler
+	definitionService *services.Definitions
 }
 
 // Reconcile reads that state of the cluster for a TestSuite object and makes changes based on the state read
@@ -96,9 +110,11 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 	// Fetch the TestSuite suite
 	ctx := context.TODO()
 	suite := &testingv1alpha1.TestSuite{}
+	request.NamespacedName.Namespace = "" // TODO wow!!!
 	err := r.Get(context.TODO(), request.NamespacedName, suite)
 	if err != nil {
 		if errors.IsNotFound(err) {
+			log.Info("Is not found error")
 			// Object not found, return.  Created objects are automatically garbage collected.
 			// For additional cleanup logic use finalizers.
 			return reconcile.Result{}, nil
@@ -110,6 +126,7 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 	suite = suite.DeepCopy()
 
 	if r.isUninitialized(suite) {
+		log.Info("Initialize suite")
 		testDefs, err := r.findTestsThatMatches(suite)
 		if err != nil {
 			return reconcile.Result{}, nil
@@ -126,16 +143,26 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	if r.isFinished(suite) {
+		log.Info("Nothing to do with suite")
 		return reconcile.Result{}, nil
 	}
 
 	// Test Suite is in progress
+	log.Info("Ensuring status up-to-date")
 	if err := r.ensureStatusUpToDate(suite); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.tryScheduleTests(suite); err != nil {
+	pod, err := r.tryScheduleTests(suite)
+	if err != nil {
 		return reconcile.Result{}, err
+	}
+
+	if pod != nil {
+		log.Info("Pod for suite created")
+		if err := controllerutil.SetControllerReference(suite, pod, r.scheme); err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	if err := r.Client.Status().Update(ctx, suite); err != nil {
@@ -146,28 +173,32 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 }
 
 func (r *ReconcileTestSuite) isUninitialized(suite *testingv1alpha1.TestSuite) bool {
-	return true
+	return r.statusService.IsUninitialized(suite)
 }
 
 func (r *ReconcileTestSuite) isFinished(suite *testingv1alpha1.TestSuite) bool {
-	return false
+	return r.statusService.IsFinished(suite)
 }
 
 func (r *ReconcileTestSuite) initializeTests(suite *testingv1alpha1.TestSuite, defs []testingv1alpha1.TestDefinition) error {
-	return nil
+	return r.statusService.InitializeTests(suite, defs)
 }
 
 // find test definitions
 func (r *ReconcileTestSuite) findTestsThatMatches(suite *testingv1alpha1.TestSuite) ([]testingv1alpha1.TestDefinition, error) {
-	return nil, nil
+	return r.definitionService.FindMatchingDefinitions(suite)
 }
 
 // get info from pods
 func (r *ReconcileTestSuite) ensureStatusUpToDate(suite *testingv1alpha1.TestSuite) error {
-	return nil
+	pods, err := r.reporter.GetPodsForSuite(suite)
+	if err != nil {
+		return err
+	}
+	return r.statusService.EnsureStatusIsUpToDate(suite, pods)
 }
 
 // create Pod
-func (r *ReconcileTestSuite) tryScheduleTests(suite *testingv1alpha1.TestSuite) error {
-	return nil
+func (r *ReconcileTestSuite) tryScheduleTests(suite *testingv1alpha1.TestSuite) (*v1.Pod, error) {
+	return r.scheduler.TryScheduleTest(suite)
 }

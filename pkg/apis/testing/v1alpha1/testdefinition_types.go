@@ -25,7 +25,7 @@ import (
 
 // TestDefinitionSpec defines the desired state of TestDefinition
 type TestDefinitionSpec struct {
-	PodSpec v1.PodSpec `json:"pod_spec"`
+	PodSpec v1.PodSpec `json:"podSpec"`
 	// If there are some problems with given test, we add possibility to don't execute them
 	// On Testsuite level such test should be marked as a skipped
 	Skip bool `json:"skip,omitempty"`
@@ -33,10 +33,10 @@ type TestDefinitionSpec struct {
 	// I would like to run it in separation.
 	DisableConcurrency bool `json:"disable_concurrency,omitempty"`
 	// List of components this test depends on.
-	Components []string `json:"components,omitempty"`
+	Components []string `json:"components,inline,omitempty"`
 	// Test should be interrupted after the timeout.
 	// On test suite level such test should be marked as a timeouted
-	Timeout *metav1.Duration `json:"timeout,omitempty"`
+	Timeout *metav1.Duration `json:"timeout,inline,omitempty"`
 }
 
 // TestDefinitionStatus defines the observed state of TestDefinition
@@ -52,6 +52,7 @@ type TestDefinitionStatus struct {
 
 // TestDefinition is the Schema for the testdefinitions API
 // +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
 type TestDefinition struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

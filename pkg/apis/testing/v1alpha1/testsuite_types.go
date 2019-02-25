@@ -31,11 +31,11 @@ type TestSuiteSpec struct {
 	TestNamesSelector []NamespacedTest `json:"testNamesSelector,omitempty"`
 	// Will run every test that depends of any of the component listed here
 	ComponentsSelector []string `json:"componentsSelector,omitempty"`
-	AllTestsSelector   bool     `json:"allTestsSelector"`
+	AllTestsSelector   bool     `json:"allTestsSelector,omitempty"`
 	// Running all tests from suite cannot take more time that specified here
-	SuiteTimeout *metav1.Duration `json:"suiteTimeout,omitempty"`
+	SuiteTimeout *metav1.Duration `json:"suiteTimeout,inline,omitempty"`
 	// If specific TestDefinition does not define timeout, use this one
-	DefaultTestTimeout *metav1.Duration `json:"defaultTestTimeout,omitempty"`
+	DefaultTestTimeout *metav1.Duration `json:"defaultTestTimeout,inline,omitempty"`
 	// Should I repeat every test? Default value will be 1
 	Repeat int64 `json:"repeat,omitempty"`
 	// In case of a failed test, how many times it will be retried.
@@ -77,6 +77,7 @@ const (
 	SuiteSucceed TestSuiteConditionType = "succeed"
 
 	// Test is not yet scheduled
+	// TODO rename it
 	TestPending TestResultConditionType = "pending"
 	// Test is running
 	TestRunning TestResultConditionType = "running"
@@ -104,10 +105,10 @@ type TestResult struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
 	// Unique ID of specific test execution. Equivalent to testing Pod name
-	ID         string                `json:"id"`
+	ID         string                `json:"id"` // TODO we cannot have id and retries in the same place
 	Conditions []TestResultCondition `json:"conditions,omitempty"`
 	// How many times test was retired
-	Retries int64 `json:"retries"`
+	Retries int64 `json:"retries"` // TODO should be removed
 }
 
 // +genclient
@@ -116,6 +117,7 @@ type TestResult struct {
 
 // TestSuite is the Schema for the testsuites API
 // +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
 type TestSuite struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

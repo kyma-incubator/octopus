@@ -8,6 +8,10 @@ import (
 
 // findTestsThatMatches(suite *testingv1alpha1.TestSuite) ([]testingv1alpha1.Definitions, error)
 
+func NewDefinitions(reader client.Reader) *Definitions {
+	return &Definitions{reader: reader}
+}
+
 type Definitions struct {
 	reader client.Reader
 }
