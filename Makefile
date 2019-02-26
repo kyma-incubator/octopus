@@ -3,16 +3,9 @@ APP_NAME ?= octopus
 IMG ?= $(APP_NAME):latest
 IMG-CI = $(DOCKER_PUSH_REPOSITORY)$(DOCKER_PUSH_DIRECTORY)/$(APP_NAME):$(DOCKER_TAG)
 
-all: test manager
-
 # Run tests
-test: generate fmt vet manifests
-	dep status
+test: generate manifests
 	go test ./pkg/... ./cmd/... -coverprofile cover.out
-
-# Build manager binary
-manager: generate fmt vet
-	go build -o bin/manager github.com/kyma-incubator/octopus/cmd/manager
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet
@@ -52,11 +45,16 @@ docker-build: resolve test
 
 # Push the docker image
 docker-push:
+	docker push ${IMG}
 
 ### Custom targets
 # Resolve dependencies
 resolve:
 	dep ensure -v -vendor-only
+
+# Executes the whole validation
+validate: fmt vet test
+	dep status
 
 # CI specified targets
 ci-pr: docker-build docker-push
