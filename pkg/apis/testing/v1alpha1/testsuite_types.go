@@ -26,31 +26,38 @@ import (
 type TestSuiteSpec struct {
 	// How many tests we want to execute at the same time.
 	// Depends on cluster size and it's load
-	ConcurrencyLevel int64 `json:"concurrencyLevel,omitempty"`
+	// Default value is 1
+	Concurrency int64 `json:"concurrency,omitempty"`
 	// You can specify test names explicitly.
-	TestNamesSelector []NamespacedTest `json:"testNamesSelector,omitempty"`
+	TestNamesSelector []TestDefReference `json:"testNamesSelector,omitempty"`
 	// Will run every test that depends of any of the component listed here
 	ComponentsSelector []string `json:"componentsSelector,omitempty"`
-	// Running all tests from suite cannot take more time that specified here
-	SuiteTimeout *metav1.Duration `json:"suiteTimeout,omitempty"`
+	// Will run every test if set to true. Default values is false
+	AllTestsSelector bool `json:"allTestsSelector,omitempty"`
+	// Running all tests from suite cannot take more time that specified here.
+	// Default value is 1h
+	SuiteTimeout *metav1.Duration `json:"suiteTimeout,inline,omitempty"`
 	// If specific TestDefinition does not define timeout, use this one
-	DefaultTestTimeout *metav1.Duration `json:"defaultTestTimeout,omitempty"`
-	// Should I repeat every test? Default value will be 1
-	Repeat int64 `json:"repeat,omitempty"`
+	// No default value
+	DefaultTestTimeout *metav1.Duration `json:"defaultTestTimeout,inline,omitempty"`
+	// How many times should I run every test? Default value will be 1.
+	Count int64 `json:"count,omitempty"`
 	// In case of a failed test, how many times it will be retried.
 	// If test failed and on retry it succeeded, Test Suite should be marked as a succeeded.
+	// Default value is 0 - no retries.
+	// MaxRetries and Count cannot be used mutually.
 	MaxRetries int64 `json:"maxRetries,omitempty"`
 }
 
-type NamespacedTest struct {
+type TestDefReference struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
 }
 
 // TestSuiteStatus defines the observed state of TestSuite
 type TestSuiteStatus struct {
-	StartTime      *metav1.Time         `json:"startTime,omitempty"`
-	CompletionTime *metav1.Time         `json:"completionTime,omitempty"`
+	StartTime      *metav1.Time         `json:"startTime,inline,omitempty"`
+	CompletionTime *metav1.Time         `json:"completionTime,inline,omitempty"`
 	Conditions     []TestSuiteCondition `json:"conditions,omitempty"`
 	Results        []TestResult         `json:"results,omitempty"`
 }
@@ -60,28 +67,28 @@ type Status string
 type TestResultConditionType string
 
 const (
-	StatusTrue    Status = "true"
-	StatusFalse   Status = "false"
-	StatusUnknown Status = "unknown"
+	StatusTrue    Status = "True"
+	StatusFalse   Status = "False"
+	StatusUnknown Status = "Unknown"
 
 	// SuiteUninitialized is when suite has not yet determined tests to run
-	SuiteUninitialized TestSuiteConditionType = "pending"
-	// When test are running
-	SuiteRunning TestSuiteConditionType = "running"
+	SuiteUninitialized TestSuiteConditionType = "Uninitialized"
+	// When tests are running
+	SuiteRunning TestSuiteConditionType = "Running"
 	// When suite is finished and there were configuration problems, like missing test image
-	SuiteError TestSuiteConditionType = "error"
+	SuiteError TestSuiteConditionType = "Error"
 	// When suite is finished and there were failing tests
-	SuiteFailed TestSuiteConditionType = "failed"
+	SuiteFailed TestSuiteConditionType = "Failed"
 	// When all tests passed
-	SuiteSucceed TestSuiteConditionType = "succeed"
+	SuiteSucceed TestSuiteConditionType = "Succeed"
 
 	// Test is not yet scheduled
-	TestPending TestResultConditionType = "pending"
+	TestNotYetScheduled TestResultConditionType = "NotYetScheduled"
 	// Test is running
-	TestRunning TestResultConditionType = "running"
-	TestError   TestResultConditionType = "error"
-	TestFailed  TestResultConditionType = "failed"
-	TestSucceed TestResultConditionType = "succeed"
+	TestRunning TestResultConditionType = "Running"
+	TestError   TestResultConditionType = "Error"
+	TestFailed  TestResultConditionType = "Failed"
+	TestSucceed TestResultConditionType = "Succeed"
 )
 
 type TestSuiteCondition struct {
@@ -98,6 +105,9 @@ type TestResultCondition struct {
 	Message string                  `json:"message"`
 }
 
+// TestResult for execution of given test.
+// If test is retried (maxRetrires > 0), or executed many times (count > 1)
+// we will have many test result entries for the same test definition (the same name, namespace) but different ID (testing pod)
 type TestResult struct {
 	// Test name
 	Name      string `json:"name"`
@@ -105,8 +115,6 @@ type TestResult struct {
 	// Unique ID of specific test execution. Equivalent to testing Pod name
 	ID         string                `json:"id"`
 	Conditions []TestResultCondition `json:"conditions,omitempty"`
-	// How many times test was retired
-	Retries int64 `json:"retries"`
 }
 
 // +genclient
@@ -115,6 +123,7 @@ type TestResult struct {
 
 // TestSuite is the Schema for the testsuites API
 // +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
 type TestSuite struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

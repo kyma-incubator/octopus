@@ -25,26 +25,21 @@ import (
 
 // TestDefinitionSpec defines the desired state of TestDefinition
 type TestDefinitionSpec struct {
-	PodSpec v1.PodSpec `json:"pod_spec"`
-	// If there are some problems with given test, we add possibility to don't execute them
-	// On Testsuite level such test should be marked as a skipped
+	Template v1.PodTemplateSpec `json:"template"`
+	// If there are some problems with given test, we add possibility to don't execute them.
+	// On Testsuite level such test should be marked as a skipped.
+	// Default value is false
 	Skip bool `json:"skip,omitempty"`
 	// If test is working on data that can be modified by another test,
 	// I would like to run it in separation.
+	// Default value is false
 	DisableConcurrency bool `json:"disable_concurrency,omitempty"`
 	// List of components this test depends on.
 	Components []string `json:"components,omitempty"`
 	// Test should be interrupted after the timeout.
-	// On test suite level such test should be marked as a timeouted
-	Timeout *metav1.Duration `json:"timeout,omitempty"`
-}
-
-// TestDefinitionStatus defines the observed state of TestDefinition
-type TestDefinitionStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	// TODO empty on purpose - so far we don't need status of test definition.
-	// Later we can add check if image defined in PodSpec exist
+	// On test suite level such test should be marked as a timeouted.
+	// No default value.
+	Timeout *metav1.Duration `json:"timeout,inline,omitempty"`
 }
 
 // +genclient
@@ -56,8 +51,7 @@ type TestDefinition struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   TestDefinitionSpec   `json:"spec,omitempty"`
-	Status TestDefinitionStatus `json:"status,omitempty"`
+	Spec TestDefinitionSpec `json:"spec,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

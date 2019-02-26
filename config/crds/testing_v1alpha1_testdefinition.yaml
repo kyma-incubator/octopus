@@ -35,15 +35,13 @@ spec:
               type: array
             skip:
               description: If there are some problems with given test, we add possibility
-                to don't execute them On Testsuite level such test should be marked
-                as a skipped
+                to don't execute them. On Testsuite level such test should be marked
+                as a skipped. Default value is false
               type: boolean
-            timeout:
-              description: Test should be interrupted after the timeout. On test suite
-                level such test should be marked as a timeouted
+            template:
               type: object
-          type: object
-        status:
+          required:
+          - template
           type: object
   version: v1alpha1
 status:

@@ -11,6 +11,8 @@ spec:
     kind: TestSuite
     plural: testsuites
   scope: Cluster
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       properties:
@@ -28,35 +30,32 @@ spec:
           type: object
         spec:
           properties:
+            allTestsSelector:
+              description: Will run every test if set to true. Default values is false
+              type: boolean
             componentsSelector:
               description: Will run every test that depends of any of the component
                 listed here
               items:
                 type: string
               type: array
-            concurrencyLevel:
+            concurrency:
               description: How many tests we want to execute at the same time. Depends
-                on cluster size and it's load
+                on cluster size and it's load Default value is 1
               format: int64
               type: integer
-            defaultTestTimeout:
-              description: If specific TestDefinition does not define timeout, use
-                this one
-              type: object
+            count:
+              description: How many times should I run every test? Default value will
+                be 1.
+              format: int64
+              type: integer
             maxRetries:
               description: In case of a failed test, how many times it will be retried.
                 If test failed and on retry it succeeded, Test Suite should be marked
-                as a succeeded.
+                as a succeeded. Default value is 0 - no retries. MaxRetries and Count
+                cannot be used mutually.
               format: int64
               type: integer
-            repeat:
-              description: Should I repeat every test? Default value will be 1
-              format: int64
-              type: integer
-            suiteTimeout:
-              description: Running all tests from suite cannot take more time that
-                specified here
-              type: object
             testNamesSelector:
               description: You can specify test names explicitly.
               items:
@@ -73,9 +72,6 @@ spec:
           type: object
         status:
           properties:
-            completionTime:
-              format: date-time
-              type: string
             conditions:
               items:
                 properties:
@@ -124,20 +120,12 @@ spec:
                     type: string
                   namespace:
                     type: string
-                  retries:
-                    description: How many times test was retired
-                    format: int64
-                    type: integer
                 required:
                 - name
                 - namespace
                 - id
-                - retries
                 type: object
               type: array
-            startTime:
-              format: date-time
-              type: string
           type: object
   version: v1alpha1
 status:

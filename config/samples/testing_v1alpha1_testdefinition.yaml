@@ -13,7 +13,7 @@ spec:
     - service-catalog
     - service-catalog-addons
   timeout: 3m
-  podSpec:
+  template:
     containers:
       - name: test
         image: alpine:latest
