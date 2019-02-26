@@ -37,7 +37,7 @@ generate:
 	go generate ./pkg/... ./cmd/...
 
 # Build the docker image
-docker-build: resolve test
+docker-build: resolve validate
 	docker build . -t ${IMG}
 	docker tag ${IMG} ${IMG-CI}
 	@echo "updating kustomize image patch file for manager resource"
