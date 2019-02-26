@@ -113,8 +113,10 @@ type TestResult struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
 	// Unique ID of specific test execution. Equivalent to testing Pod name
-	ID         string                `json:"id"`
-	Conditions []TestResultCondition `json:"conditions,omitempty"`
+	ID             string                `json:"id"`
+	StartTime      *metav1.Time          `json:"startTime,inline,omitempty"`
+	CompletionTime *metav1.Time          `json:"completionTime,inline,omitempty"`
+	Conditions     []TestResultCondition `json:"conditions,omitempty"`
 }
 
 // +genclient
