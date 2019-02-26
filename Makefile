@@ -1,3 +1,5 @@
+.DEFAULT_GOAL := validate
+
 # Image URL to use all building/pushing image targets
 APP_NAME ?= octopus
 IMG ?= $(APP_NAME):latest
