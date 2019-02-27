@@ -12,7 +12,7 @@ spec:
     - name: test-kubeless
       namespace: default
     matchLabels:
-    - service-catalog
+    - componentt/service-catalog
   suiteTimeout: 10m
   count: 5
 

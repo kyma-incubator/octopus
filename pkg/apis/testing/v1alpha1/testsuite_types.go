@@ -25,7 +25,7 @@ import (
 // TestSuiteSpec defines the desired state of ClusterTestSuite
 type TestSuiteSpec struct {
 	// How many tests we want to execute at the same time.
-	// Depends on cluster size and it's load
+	// Depends on cluster size and it's load.
 	// Default value is 1
 	Concurrency int64 `json:"concurrency,omitempty"`
 	// Decide which tests to execute. If not provided execute all tests
@@ -33,10 +33,7 @@ type TestSuiteSpec struct {
 	// Running all tests from suite cannot take more time that specified here.
 	// Default value is 1h
 	SuiteTimeout *metav1.Duration `json:"suiteTimeout,inline,omitempty"`
-	// If specific TestDefinition does not define timeout, use this one
-	// No default value
-	DefaultTestTimeout *metav1.Duration `json:"defaultTestTimeout,inline,omitempty"`
-	// How many times should I run every test? Default value will be 1.
+	// How many times should I run every test? Default value is 1.
 	Count int64 `json:"count,omitempty"`
 	// In case of a failed test, how many times it will be retried.
 	// If test failed and on retry it succeeded, Test Suite should be marked as a succeeded.
@@ -46,10 +43,11 @@ type TestSuiteSpec struct {
 }
 
 type TestsSelector struct {
-	// Find test definition by it's name
+	// Find test definitions by it's name
 	MatchNames []TestDefReference `json:"matchNames,omitempty"`
 	// Find test definitions by it's labels.
 	// TestDefinition should have AT LEAST one label listed here to be executed.
+	// Label value is irrelevant.
 	MatchLabels []string `json:"matchLabels,omitempty"`
 }
 
@@ -93,6 +91,7 @@ const (
 	TestError   TestExecutionStatus = "Error"
 	TestFailed  TestExecutionStatus = "Failed"
 	TestSucceed TestExecutionStatus = "Succeed"
+	TestSkipped TestExecutionStatus = "Skipped"
 )
 
 type TestSuiteCondition struct {

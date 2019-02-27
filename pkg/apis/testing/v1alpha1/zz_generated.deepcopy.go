@@ -254,11 +254,6 @@ func (in *TestSuiteSpec) DeepCopyInto(out *TestSuiteSpec) {
 		*out = new(v1.Duration)
 		**out = **in
 	}
-	if in.DefaultTestTimeout != nil {
-		in, out := &in.DefaultTestTimeout, &out.DefaultTestTimeout
-		*out = new(v1.Duration)
-		**out = **in
-	}
 	return
 }
 

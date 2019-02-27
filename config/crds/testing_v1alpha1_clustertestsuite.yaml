@@ -34,12 +34,12 @@ spec:
           properties:
             concurrency:
               description: How many tests we want to execute at the same time. Depends
-                on cluster size and it's load Default value is 1
+                on cluster size and it's load. Default value is 1
               format: int64
               type: integer
             count:
-              description: How many times should I run every test? Default value will
-                be 1.
+              description: How many times should I run every test? Default value is
+                1.
               format: int64
               type: integer
             maxRetries:
@@ -55,12 +55,13 @@ spec:
               properties:
                 matchLabels:
                   description: Find test definitions by it's labels. TestDefinition
-                    should have AT LEAST one label listed here to be executed.
+                    should have AT LEAST one label listed here to be executed. Label
+                    value is irrelevant.
                   items:
                     type: string
                   type: array
                 matchNames:
-                  description: Find test definition by it's name
+                  description: Find test definitions by it's name
                   items:
                     properties:
                       name:
