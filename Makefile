@@ -1,16 +1,13 @@
+.DEFAULT_GOAL := validate
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
-
-all: test manager
+APP_NAME ?= octopus
+IMG ?= $(APP_NAME):latest
+IMG-CI = $(DOCKER_PUSH_REPOSITORY)$(DOCKER_PUSH_DIRECTORY)/$(APP_NAME):$(DOCKER_TAG)
 
 # Run tests
-test: generate fmt vet manifests
+test: generate manifests
 	go test ./pkg/... ./cmd/... -coverprofile cover.out
-
-# Build manager binary
-manager: generate fmt vet
-	go build -o bin/manager github.com/kyma-incubator/octopus/cmd/manager
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet
@@ -42,10 +39,11 @@ generate:
 	go generate ./pkg/... ./cmd/...
 
 # Build the docker image
-docker-build: resolve test
+docker-build: resolve validate
 	docker build . -t ${IMG}
+	docker tag ${IMG} ${IMG-CI}
 	@echo "updating kustomize image patch file for manager resource"
-	sed -i'' -e 's@image: .*@image: '"${IMG}"'@' ./config/default/manager_image_patch.yaml
+	sed -i'' -e 's@image: .*@image: '"${IMG-CI}"'@' ./config/default/manager_image_patch.yaml
 
 # Push the docker image
 docker-push:
@@ -55,3 +53,12 @@ docker-push:
 # Resolve dependencies
 resolve:
 	dep ensure -v -vendor-only
+
+# Executes the whole validation
+validate: fmt vet test
+	dep status
+
+# CI specified targets
+ci-pr: docker-build docker-push
+ci-master: docker-build docker-push
+ci-release: docker-build docker-push

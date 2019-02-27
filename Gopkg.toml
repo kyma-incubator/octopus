@@ -19,6 +19,9 @@ required = [
 [prune]
   go-tests = true
 
+[[constraint]]
+  name = "k8s.io/apimachinery"
+  version = "kubernetes-1.12.3"
 
 # STANZAS BELOW ARE GENERATED AND MAY BE WRITTEN - DO NOT MODIFY BELOW THIS LINE.
 
