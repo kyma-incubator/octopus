@@ -7,14 +7,9 @@ metadata:
     dependency/kubeless: "true"
     component/service-catalog: "true"
   name: test-kubeless
-
 spec:
   skip: n
   disableConcurrency: n
-  components:
-    - kubeless
-    - service-catalog
-    - service-catalog-addons
   timeout: 3m
   template:
     containers:

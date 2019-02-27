@@ -1,20 +1,28 @@
 ---
 apiVersion: testing.kyma-project.io/v1alpha1
-kind: TestSuite
+kind: ClusterTestSuite
 metadata:
   labels:
     controller-tools.k8s.io: "1.0"
-  name: testsuite-sample
+  name: testsuite-kubeless-and-service-catalog
 spec:
-  # Add fields here
   concurrency: 2
-  selector:
+  selectors:
     matchNames:
-    - test-kubeless
-    -
-    matchComponents:
+    - name: test-kubeless
+      namespace: default
+    matchLabels:
     - service-catalog
   suiteTimeout: 10m
-  defaultTestTimeout: 5m
-  count: 2
-  maxRetries: 3
+  count: 5
+
+---
+
+apiVersion: testing.kyma-project.io/v1alpha1
+kind: ClusterTestSuite
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: testsuite-all
+spec:
+  maxRetries: 1

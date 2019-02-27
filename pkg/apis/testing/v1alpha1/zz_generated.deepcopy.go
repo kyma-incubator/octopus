@@ -164,11 +164,6 @@ func (in *TestDefinitionList) DeepCopyObject() runtime.Object {
 func (in *TestDefinitionSpec) DeepCopyInto(out *TestDefinitionSpec) {
 	*out = *in
 	in.Template.DeepCopyInto(&out.Template)
-	if in.Components != nil {
-		in, out := &in.Components, &out.Components
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
 	if in.Timeout != nil {
 		in, out := &in.Timeout, &out.Timeout
 		*out = new(v1.Duration)

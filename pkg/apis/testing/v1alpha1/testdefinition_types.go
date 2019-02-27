@@ -34,8 +34,6 @@ type TestDefinitionSpec struct {
 	// I would like to run it in separation.
 	// Default value is false
 	DisableConcurrency bool `json:"disable_concurrency,omitempty"`
-	// List of components this test depends on.
-	Components []string `json:"components,omitempty"`
 	// Test should be interrupted after the timeout.
 	// On test suite level such test should be marked as a timeouted.
 	// No default value.
@@ -47,6 +45,7 @@ type TestDefinitionSpec struct {
 
 // TestDefinition is the Schema for the testdefinitions API
 // +k8s:openapi-gen=true
+// +kubebuilder:resource:path=testdefinitions,shortName=tdef
 type TestDefinition struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

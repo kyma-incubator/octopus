@@ -10,6 +10,8 @@ spec:
   names:
     kind: ClusterTestSuite
     plural: clustertestsuites
+    shortNames:
+    - tsuite
   scope: Cluster
   subresources:
     status: {}

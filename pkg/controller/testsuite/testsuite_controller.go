@@ -102,6 +102,8 @@ type ReconcileTestSuite struct {
 func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	// Fetch the ClusterTestSuite instance
 	instance := &testingv1alpha1.ClusterTestSuite{}
+	// TODO quick fix for cluster-scoped objects
+	request.Namespace = ""
 	err := r.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {

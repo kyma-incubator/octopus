@@ -10,6 +10,8 @@ spec:
   names:
     kind: TestDefinition
     plural: testdefinitions
+    shortNames:
+    - tdef
   scope: Namespaced
   validation:
     openAPIV3Schema:
@@ -28,11 +30,6 @@ spec:
           type: object
         spec:
           properties:
-            components:
-              description: List of components this test depends on.
-              items:
-                type: string
-              type: array
             skip:
               description: If there are some problems with given test, we add possibility
                 to don't execute them. On Testsuite level such test should be marked
