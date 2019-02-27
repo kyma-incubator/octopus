@@ -211,9 +211,9 @@ func (in *TestResult) DeepCopyInto(out *TestResult) {
 	*out = *in
 	if in.Executions != nil {
 		in, out := &in.Executions, &out.Executions
-		*out = make(map[string]TestExecution, len(*in))
-		for key, val := range *in {
-			(*out)[key] = *val.DeepCopy()
+		*out = make([]TestExecution, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 	return

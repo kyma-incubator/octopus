@@ -98,6 +98,25 @@ spec:
             results:
               items:
                 properties:
+                  executions:
+                    items:
+                      properties:
+                        id:
+                          type: string
+                        message:
+                          type: string
+                        reason:
+                          type: string
+                        status:
+                          description: ID is equivalent to a testing Pod name
+                          type: string
+                      required:
+                      - id
+                      - status
+                      - reason
+                      - message
+                      type: object
+                    type: array
                   name:
                     description: Test name
                     type: string
@@ -106,6 +125,7 @@ spec:
                 required:
                 - name
                 - namespace
+                - executions
                 type: object
               type: array
           type: object

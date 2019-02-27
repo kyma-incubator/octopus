@@ -104,14 +104,14 @@ type TestSuiteCondition struct {
 // TestResult gathers all executions for given TestDefinition
 type TestResult struct {
 	// Test name
-	Name      string `json:"name"`
-	Namespace string `json:"namespace"`
-	// key is equivalent to testing Pod name
-	Executions map[string]TestExecution
+	Name       string          `json:"name"`
+	Namespace  string          `json:"namespace"`
+	Executions []TestExecution `json:"executions"`
 }
 
 // TestExecution provides status for given test execution
 type TestExecution struct {
+	ID             string              `json:"id"` // ID is equivalent to a testing Pod name
 	Status         TestExecutionStatus `json:"status"`
 	StartTime      *metav1.Time        `json:"startTime,inline,omitempty"`
 	CompletionTime *metav1.Time        `json:"completionTime,inline,omitempty"`
