@@ -45,7 +45,7 @@ type TestDefinitionSpec struct {
 
 // TestDefinition is the Schema for the testdefinitions API
 // +k8s:openapi-gen=true
-// +kubebuilder:resource:path=testdefinitions,shortName=tdef
+// +kubebuilder:resource:path=testdefinitions,shortName=td
 type TestDefinition struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

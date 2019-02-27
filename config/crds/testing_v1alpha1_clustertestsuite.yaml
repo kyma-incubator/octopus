@@ -11,7 +11,7 @@ spec:
     kind: ClusterTestSuite
     plural: clustertestsuites
     shortNames:
-    - tsuite
+    - cts
   scope: Cluster
   subresources:
     status: {}

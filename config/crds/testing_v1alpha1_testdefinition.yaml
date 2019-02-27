@@ -11,7 +11,7 @@ spec:
     kind: TestDefinition
     plural: testdefinitions
     shortNames:
-    - tdef
+    - td
   scope: Namespaced
   validation:
     openAPIV3Schema:
