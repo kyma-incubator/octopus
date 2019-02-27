@@ -40,7 +40,7 @@ const timeout = time.Second * 5
 
 func TestReconcile(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
-	instance := &testingv1alpha1.TestSuite{ObjectMeta: metav1.ObjectMeta{Name: "foo"}}
+	instance := &testingv1alpha1.ClusterTestSuite{ObjectMeta: metav1.ObjectMeta{Name: "foo"}}
 
 	// Setup the Manager and Controller.  Wrap the Controller Reconcile function so it writes each request to a
 	// channel when it is finished.
@@ -58,7 +58,7 @@ func TestReconcile(t *testing.T) {
 		mgrStopped.Wait()
 	}()
 
-	// Create the TestSuite object and expect the Reconcile and Deployment to be created
+	// Create the ClusterTestSuite object and expect the Reconcile and Deployment to be created
 	err = c.Create(context.TODO(), instance)
 	// The instance object may not be a valid object because it might be missing some required fields.
 	// Please modify the instance object by adding required fields and then remove the following if statement.

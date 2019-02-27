@@ -28,14 +28,14 @@ func TestStorageTestSuite(t *testing.T) {
 	key := types.NamespacedName{
 		Name: "foo",
 	}
-	created := &TestSuite{
+	created := &ClusterTestSuite{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "foo",
 		}}
 	g := gomega.NewGomegaWithT(t)
 
 	// Test Create
-	fetched := &TestSuite{}
+	fetched := &ClusterTestSuite{}
 	g.Expect(c.Create(context.TODO(), created)).NotTo(gomega.HaveOccurred())
 
 	g.Expect(c.Get(context.TODO(), key, fetched)).NotTo(gomega.HaveOccurred())

@@ -8,9 +8,12 @@ metadata:
 spec:
   # Add fields here
   concurrency: 2
-  testNamesSelector:
-  - name: test-kubeless
-    namespace: kyma-system
+  selector:
+    matchNames:
+    - test-kubeless
+    -
+    matchComponents:
+    - service-catalog
   suiteTimeout: 10m
   defaultTestTimeout: 5m
   count: 2

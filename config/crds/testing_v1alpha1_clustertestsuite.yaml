@@ -4,12 +4,12 @@ metadata:
   creationTimestamp: null
   labels:
     controller-tools.k8s.io: "1.0"
-  name: testsuites.testing.kyma-project.io
+  name: clustertestsuites.testing.kyma-project.io
 spec:
   group: testing.kyma-project.io
   names:
-    kind: TestSuite
-    plural: testsuites
+    kind: ClusterTestSuite
+    plural: clustertestsuites
   scope: Cluster
   subresources:
     status: {}
@@ -30,15 +30,6 @@ spec:
           type: object
         spec:
           properties:
-            allTestsSelector:
-              description: Will run every test if set to true. Default values is false
-              type: boolean
-            componentsSelector:
-              description: Will run every test that depends of any of the component
-                listed here
-              items:
-                type: string
-              type: array
             concurrency:
               description: How many tests we want to execute at the same time. Depends
                 on cluster size and it's load Default value is 1
@@ -56,19 +47,30 @@ spec:
                 cannot be used mutually.
               format: int64
               type: integer
-            testNamesSelector:
-              description: You can specify test names explicitly.
-              items:
-                properties:
-                  name:
+            selectors:
+              description: Decide which tests to execute. If not provided execute
+                all tests
+              properties:
+                matchLabels:
+                  description: Find test definitions by it's labels. TestDefinition
+                    should have AT LEAST one label listed here to be executed.
+                  items:
                     type: string
-                  namespace:
-                    type: string
-                required:
-                - name
-                - namespace
-                type: object
-              type: array
+                  type: array
+                matchNames:
+                  description: Find test definition by it's name
+                  items:
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
+                  type: array
+              type: object
           type: object
         status:
           properties:
@@ -93,28 +95,6 @@ spec:
             results:
               items:
                 properties:
-                  conditions:
-                    items:
-                      properties:
-                        message:
-                          type: string
-                        reason:
-                          type: string
-                        status:
-                          type: string
-                        type:
-                          type: string
-                      required:
-                      - type
-                      - status
-                      - reason
-                      - message
-                      type: object
-                    type: array
-                  id:
-                    description: Unique ID of specific test execution. Equivalent
-                      to testing Pod name
-                    type: string
                   name:
                     description: Test name
                     type: string
@@ -123,7 +103,6 @@ spec:
                 required:
                 - name
                 - namespace
-                - id
                 type: object
               type: array
           type: object

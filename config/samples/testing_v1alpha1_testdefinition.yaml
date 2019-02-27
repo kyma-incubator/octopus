@@ -4,7 +4,10 @@ kind: TestDefinition
 metadata:
   labels:
     controller-tools.k8s.io: "1.0"
+    dependency/kubeless: "true"
+    component/service-catalog: "true"
   name: test-kubeless
+
 spec:
   skip: n
   disableConcurrency: n

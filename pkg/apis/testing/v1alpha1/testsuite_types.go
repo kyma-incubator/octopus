@@ -22,18 +22,14 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// TestSuiteSpec defines the desired state of TestSuite
+// TestSuiteSpec defines the desired state of ClusterTestSuite
 type TestSuiteSpec struct {
 	// How many tests we want to execute at the same time.
 	// Depends on cluster size and it's load
 	// Default value is 1
 	Concurrency int64 `json:"concurrency,omitempty"`
-	// You can specify test names explicitly.
-	TestNamesSelector []TestDefReference `json:"testNamesSelector,omitempty"`
-	// Will run every test that depends of any of the component listed here
-	ComponentsSelector []string `json:"componentsSelector,omitempty"`
-	// Will run every test if set to true. Default values is false
-	AllTestsSelector bool `json:"allTestsSelector,omitempty"`
+	// Decide which tests to execute. If not provided execute all tests
+	Selectors TestsSelector `json:"selectors,omitempty"`
 	// Running all tests from suite cannot take more time that specified here.
 	// Default value is 1h
 	SuiteTimeout *metav1.Duration `json:"suiteTimeout,inline,omitempty"`
@@ -49,12 +45,20 @@ type TestSuiteSpec struct {
 	MaxRetries int64 `json:"maxRetries,omitempty"`
 }
 
+type TestsSelector struct {
+	// Find test definition by it's name
+	MatchNames []TestDefReference `json:"matchNames,omitempty"`
+	// Find test definitions by it's labels.
+	// TestDefinition should have AT LEAST one label listed here to be executed.
+	MatchLabels []string `json:"matchLabels,omitempty"`
+}
+
 type TestDefReference struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
 }
 
-// TestSuiteStatus defines the observed state of TestSuite
+// TestSuiteStatus defines the observed state of ClusterTestSuite
 type TestSuiteStatus struct {
 	StartTime      *metav1.Time         `json:"startTime,inline,omitempty"`
 	CompletionTime *metav1.Time         `json:"completionTime,inline,omitempty"`
@@ -64,7 +68,7 @@ type TestSuiteStatus struct {
 
 type TestSuiteConditionType string
 type Status string
-type TestResultConditionType string
+type TestExecutionStatus string
 
 const (
 	StatusTrue    Status = "True"
@@ -83,12 +87,12 @@ const (
 	SuiteSucceed TestSuiteConditionType = "Succeed"
 
 	// Test is not yet scheduled
-	TestNotYetScheduled TestResultConditionType = "NotYetScheduled"
+	TestNotYetScheduled TestExecutionStatus = "NotYetScheduled"
 	// Test is running
-	TestRunning TestResultConditionType = "Running"
-	TestError   TestResultConditionType = "Error"
-	TestFailed  TestResultConditionType = "Failed"
-	TestSucceed TestResultConditionType = "Succeed"
+	TestRunning TestExecutionStatus = "Running"
+	TestError   TestExecutionStatus = "Error"
+	TestFailed  TestExecutionStatus = "Failed"
+	TestSucceed TestExecutionStatus = "Succeed"
 )
 
 type TestSuiteCondition struct {
@@ -98,35 +102,32 @@ type TestSuiteCondition struct {
 	Message string                 `json:"message"`
 }
 
-type TestResultCondition struct {
-	Type    TestResultConditionType `json:"type"`
-	Status  Status                  `json:"status"`
-	Reason  string                  `json:"reason"`
-	Message string                  `json:"message"`
-}
-
-// TestResult for execution of given test.
-// If test is retried (maxRetrires > 0), or executed many times (count > 1)
-// we will have many test result entries for the same test definition (the same name, namespace) but different ID (testing pod)
+// TestResult gathers all executions for given TestDefinition
 type TestResult struct {
 	// Test name
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
-	// Unique ID of specific test execution. Equivalent to testing Pod name
-	ID             string                `json:"id"`
-	StartTime      *metav1.Time          `json:"startTime,inline,omitempty"`
-	CompletionTime *metav1.Time          `json:"completionTime,inline,omitempty"`
-	Conditions     []TestResultCondition `json:"conditions,omitempty"`
+	// key is equivalent to testing Pod name
+	Executions map[string]TestExecution
+}
+
+// TestExecution provides status for given test execution
+type TestExecution struct {
+	Status         TestExecutionStatus `json:"status"`
+	StartTime      *metav1.Time        `json:"startTime,inline,omitempty"`
+	CompletionTime *metav1.Time        `json:"completionTime,inline,omitempty"`
+	Reason         string              `json:"reason"`
+	Message        string              `json:"message"`
 }
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient:nonNamespaced
 
-// TestSuite is the Schema for the testsuites API
+// ClusterTestSuite is the Schema for the testsuites API
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
-type TestSuite struct {
+type ClusterTestSuite struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
@@ -137,13 +138,13 @@ type TestSuite struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient:nonNamespaced
 
-// TestSuiteList contains a list of TestSuite
-type TestSuiteList struct {
+// ClusterTestSuiteList contains a list of ClusterTestSuite
+type ClusterTestSuiteList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []TestSuite `json:"items"`
+	Items           []ClusterTestSuite `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&TestSuite{}, &TestSuiteList{})
+	SchemeBuilder.Register(&ClusterTestSuite{}, &ClusterTestSuiteList{})
 }

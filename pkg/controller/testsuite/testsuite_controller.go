@@ -43,7 +43,7 @@ var log = logf.Log.WithName("controller")
 * business logic.  Delete these comments after modifying this file.*
  */
 
-// Add creates a new TestSuite Controller and adds it to the Manager with default RBAC. The Manager will set fields on the Controller
+// Add creates a new ClusterTestSuite Controller and adds it to the Manager with default RBAC. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
@@ -57,22 +57,23 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
+
 	c, err := controller.New("testsuite-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
 
-	// Watch for changes to TestSuite
-	err = c.Watch(&source.Kind{Type: &testingv1alpha1.TestSuite{}}, &handler.EnqueueRequestForObject{})
+	// Watch for changes to ClusterTestSuite
+	err = c.Watch(&source.Kind{Type: &testingv1alpha1.ClusterTestSuite{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
 	// TODO(user): Modify this to be the types you create
-	// Uncomment watch a Deployment created by TestSuite - change this for objects you create
+	// Uncomment watch a Deployment created by ClusterTestSuite - change this for objects you create
 	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &testingv1alpha1.TestSuite{},
+		OwnerType:    &testingv1alpha1.ClusterTestSuite{},
 	})
 	if err != nil {
 		return err
@@ -83,14 +84,14 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 var _ reconcile.Reconciler = &ReconcileTestSuite{}
 
-// ReconcileTestSuite reconciles a TestSuite object
+// ReconcileTestSuite reconciles a ClusterTestSuite object
 type ReconcileTestSuite struct {
 	client.Client
 	scheme *runtime.Scheme
 }
 
-// Reconcile reads that state of the cluster for a TestSuite object and makes changes based on the state read
-// and what is in the TestSuite.Spec
+// Reconcile reads that state of the cluster for a ClusterTestSuite object and makes changes based on the state read
+// and what is in the ClusterTestSuite.Spec
 // TODO(user): Modify this Reconcile function to implement your Controller logic.  The scaffolding writes
 // a Deployment as an example
 // Automatically generate RBAC rules to allow the Controller to read and write Deployments
@@ -99,8 +100,8 @@ type ReconcileTestSuite struct {
 // +kubebuilder:rbac:groups=testing.kyma-project.io,resources=testsuites,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=testing.kyma-project.io,resources=testsuites/status,verbs=get;update;patch
 func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	// Fetch the TestSuite instance
-	instance := &testingv1alpha1.TestSuite{}
+	// Fetch the ClusterTestSuite instance
+	instance := &testingv1alpha1.ClusterTestSuite{}
 	err := r.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
