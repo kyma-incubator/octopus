@@ -20,25 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// TestDefinitionSpec defines the desired state of TestDefinition
-type TestDefinitionSpec struct {
-	Template v1.PodTemplateSpec `json:"template"`
-	// If there are some problems with given test, we add possibility to don't execute them.
-	// On Testsuite level such test should be marked as a skipped.
-	// Default value is false
-	Skip bool `json:"skip,omitempty"`
-	// If test is working on data that can be modified by another test,
-	// I would like to run it in separation.
-	// Default value is false
-	DisableConcurrency bool `json:"disable_concurrency,omitempty"`
-	// Test should be interrupted after the timeout.
-	// On test suite level such test should be marked as a timeouted.
-	// No default value.
-	Timeout *metav1.Duration `json:"timeout,inline,omitempty"`
-}
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -60,6 +42,23 @@ type TestDefinitionList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []TestDefinition `json:"items"`
+}
+
+// TestDefinitionSpec defines the desired state of TestDefinition
+type TestDefinitionSpec struct {
+	Template v1.PodTemplateSpec `json:"template"`
+	// If there are some problems with given test, we add possibility to don't execute them.
+	// On Testsuite level such test should be marked as a skipped.
+	// Default value is false
+	Skip bool `json:"skip,omitempty"`
+	// If test is working on data that can be modified by another test,
+	// I would like to run it in separation.
+	// Default value is false
+	DisableConcurrency bool `json:"disable_concurrency,omitempty"`
+	// Test should be interrupted after the timeout.
+	// On test suite level such test should be marked as a timeouted.
+	// No default value.
+	Timeout *metav1.Duration `json:"timeout,inline,omitempty"`
 }
 
 func init() {

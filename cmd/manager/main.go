@@ -17,11 +17,12 @@ package main
 
 import (
 	"flag"
+	"os"
+
 	"github.com/kyma-incubator/octopus/pkg/apis"
 	"github.com/kyma-incubator/octopus/pkg/controller"
 	"github.com/kyma-incubator/octopus/pkg/webhook"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"

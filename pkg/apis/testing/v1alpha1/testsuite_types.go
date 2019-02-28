@@ -19,8 +19,63 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+type TestSuiteConditionType string
+type Status string
+type TestExecutionStatus string
+
+const (
+	StatusTrue    Status = "True"
+	StatusFalse   Status = "False"
+	StatusUnknown Status = "Unknown"
+
+	// SuiteUninitialized is when suite has not yet determined tests to run
+	SuiteUninitialized TestSuiteConditionType = "Uninitialized"
+	// When tests are running
+	SuiteRunning TestSuiteConditionType = "Running"
+	// When suite is finished and there were configuration problems, like missing test image
+	SuiteError TestSuiteConditionType = "Error"
+	// When suite is finished and there were failing tests
+	SuiteFailed TestSuiteConditionType = "Failed"
+	// When all tests passed
+	SuiteSucceed TestSuiteConditionType = "Succeed"
+
+	// Test is not yet scheduled
+	TestNotYetScheduled TestExecutionStatus = "NotYetScheduled"
+	// Test is running
+	TestRunning TestExecutionStatus = "Running"
+	TestError   TestExecutionStatus = "Error"
+	TestFailed  TestExecutionStatus = "Failed"
+	TestSucceed TestExecutionStatus = "Succeed"
+	TestSkipped TestExecutionStatus = "Skipped"
+)
+
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +genclient:nonNamespaced
+
+// ClusterTestSuite is the Schema for the testsuites API
+// +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
+// +kubebuilder:resource:path=clustertestsuites,shortName=cts
+type ClusterTestSuite struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   TestSuiteSpec   `json:"spec,omitempty"`
+	Status TestSuiteStatus `json:"status,omitempty"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +genclient:nonNamespaced
+
+// ClusterTestSuiteList contains a list of ClusterTestSuite
+type ClusterTestSuiteList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []ClusterTestSuite `json:"items"`
+}
 
 // TestSuiteSpec defines the desired state of ClusterTestSuite
 type TestSuiteSpec struct {
@@ -64,36 +119,6 @@ type TestSuiteStatus struct {
 	Results        []TestResult         `json:"results,omitempty"`
 }
 
-type TestSuiteConditionType string
-type Status string
-type TestExecutionStatus string
-
-const (
-	StatusTrue    Status = "True"
-	StatusFalse   Status = "False"
-	StatusUnknown Status = "Unknown"
-
-	// SuiteUninitialized is when suite has not yet determined tests to run
-	SuiteUninitialized TestSuiteConditionType = "Uninitialized"
-	// When tests are running
-	SuiteRunning TestSuiteConditionType = "Running"
-	// When suite is finished and there were configuration problems, like missing test image
-	SuiteError TestSuiteConditionType = "Error"
-	// When suite is finished and there were failing tests
-	SuiteFailed TestSuiteConditionType = "Failed"
-	// When all tests passed
-	SuiteSucceed TestSuiteConditionType = "Succeed"
-
-	// Test is not yet scheduled
-	TestNotYetScheduled TestExecutionStatus = "NotYetScheduled"
-	// Test is running
-	TestRunning TestExecutionStatus = "Running"
-	TestError   TestExecutionStatus = "Error"
-	TestFailed  TestExecutionStatus = "Failed"
-	TestSucceed TestExecutionStatus = "Succeed"
-	TestSkipped TestExecutionStatus = "Skipped"
-)
-
 type TestSuiteCondition struct {
 	Type    TestSuiteConditionType `json:"type"`
 	Status  Status                 `json:"status"`
@@ -117,32 +142,6 @@ type TestExecution struct {
 	CompletionTime *metav1.Time        `json:"completionTime,inline,omitempty"`
 	Reason         string              `json:"reason"`
 	Message        string              `json:"message"`
-}
-
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +genclient:nonNamespaced
-
-// ClusterTestSuite is the Schema for the testsuites API
-// +k8s:openapi-gen=true
-// +kubebuilder:subresource:status
-// +kubebuilder:resource:path=clustertestsuites,shortName=cts
-type ClusterTestSuite struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   TestSuiteSpec   `json:"spec,omitempty"`
-	Status TestSuiteStatus `json:"status,omitempty"`
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +genclient:nonNamespaced
-
-// ClusterTestSuiteList contains a list of ClusterTestSuite
-type ClusterTestSuiteList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ClusterTestSuite `json:"items"`
 }
 
 func init() {
