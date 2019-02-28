@@ -13,9 +13,10 @@ test: generate manifests
 run: generate fmt vet
 	go run ./cmd/manager/main.go
 
-# Install CRDs into a cluster
+# Install CRDs and samples into a cluster
 install: manifests
 	kubectl apply -f config/crds
+	kubectl apply -f config/samples
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
@@ -47,7 +48,7 @@ docker-build: resolve validate
 
 # Push the docker image
 docker-push:
-	docker push ${IMG}
+	docker push ${IMG-CI}
 
 ### Custom targets
 # Resolve dependencies
