@@ -48,7 +48,7 @@ docker-build: resolve validate
 
 # Push the docker image
 docker-push:
-	docker push ${IMG}
+	docker push ${IMG-CI}
 
 ### Custom targets
 # Resolve dependencies
