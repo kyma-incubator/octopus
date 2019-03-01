@@ -16,6 +16,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -42,6 +43,7 @@ const (
 	// Test is not yet scheduled
 	TestNotYetScheduled TestExecutionStatus = "NotYetScheduled"
 	// Test is running
+	TestScheduled TestExecutionStatus = "Scheduled" // TODO do we need both of them?
 	TestRunning TestExecutionStatus = "Running"
 	TestError   TestExecutionStatus = "Error"
 	TestFailed  TestExecutionStatus = "Failed"
@@ -146,4 +148,11 @@ type TestExecution struct {
 
 func init() {
 	SchemeBuilder.Register(&ClusterTestSuite{}, &ClusterTestSuiteList{})
+}
+
+func (s *ClusterTestSuite) String() string {
+	if s == nil {
+		return "nil"
+	}
+	return fmt.Sprintf("ClusterTestSuite {Name: %s}", s.Name)
 }

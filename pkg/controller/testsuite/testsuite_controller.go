@@ -17,15 +17,16 @@ package testsuite
 
 import (
 	"context"
-	"reflect"
-
+	"github.com/go-logr/logr"
 	testingv1alpha1 "github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
+	"github.com/kyma-incubator/octopus/pkg/def"
+	"github.com/kyma-incubator/octopus/pkg/reporter"
+	"github.com/kyma-incubator/octopus/pkg/scheduler"
+	"github.com/kyma-incubator/octopus/pkg/status"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -34,14 +35,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"time"
 )
 
-var log = logf.Log.WithName("controller")
-
-/**
-* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
-* business logic.  Delete these comments after modifying this file.*
- */
+var log = logf.Log.WithName("cts_controller")
 
 // Add creates a new ClusterTestSuite Controller and adds it to the Manager with default RBAC. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -51,7 +48,13 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileTestSuite{Client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileTestSuite{
+		Client:            mgr.GetClient(),
+		scheme:            mgr.GetScheme(),
+		scheduler:         &scheduler.Service{},
+		statusService:     &status.Service{},
+		definitionService: def.NewService(mgr.GetClient()),
+		reporter:          &reporter.Service{},}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -69,9 +72,8 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// TODO(user): Modify this to be the types you create
-	// Uncomment watch a Deployment created by ClusterTestSuite - change this for objects you create
-	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
+	// Watch for changes to Pods
+	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &testingv1alpha1.ClusterTestSuite{},
 	})
@@ -84,29 +86,57 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 var _ reconcile.Reconciler = &ReconcileTestSuite{}
 
+// dependencies
+type TestScheduler interface {
+	TrySchedule(suite testingv1alpha1.ClusterTestSuite) (*corev1.Pod, *testingv1alpha1.TestSuiteStatus, error)
+}
+
+type TestReporter interface {
+	GetPodsForSuite(suite testingv1alpha1.ClusterTestSuite) ([]corev1.Pod, error)
+}
+
+type SuiteStatusService interface {
+	EnsureStatusIsUpToDate(suite testingv1alpha1.ClusterTestSuite, pods []corev1.Pod) (*testingv1alpha1.TestSuiteStatus, error)
+	InitializeTests(suite testingv1alpha1.ClusterTestSuite, defs []testingv1alpha1.TestDefinition) (*testingv1alpha1.TestSuiteStatus, error)
+	IsUninitialized(suite testingv1alpha1.ClusterTestSuite) bool
+	IsFinished(suite testingv1alpha1.ClusterTestSuite) bool
+}
+
+type TestDefinitionService interface {
+	FindMatching(suite testingv1alpha1.ClusterTestSuite) ([]testingv1alpha1.TestDefinition, error)
+}
+
 // ReconcileTestSuite reconciles a ClusterTestSuite object
 type ReconcileTestSuite struct {
 	client.Client
-	scheme *runtime.Scheme
+	scheme            *runtime.Scheme
+	scheduler         TestScheduler
+	reporter          TestReporter
+	statusService     SuiteStatusService
+	definitionService TestDefinitionService
 }
+
+const (
+	defaultRequeueAfter = time.Second * 10
+)
 
 // Reconcile reads that state of the cluster for a ClusterTestSuite object and makes changes based on the state read
 // and what is in the ClusterTestSuite.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  The scaffolding writes
-// a Deployment as an example
+
 // Automatically generate RBAC rules to allow the Controller to read and write Deployments
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=testing.kyma-project.io,resources=testsuites,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=testing.kyma-project.io,resources=testsuites/status,verbs=get;update;patch
 func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	// Fetch the ClusterTestSuite instance
-	instance := &testingv1alpha1.ClusterTestSuite{}
+	ctx := context.Background()
+	// Fetch the ClusterTestSuite suiteCopy
+	suite := &testingv1alpha1.ClusterTestSuite{}
 	// TODO quick fix for cluster-scoped objects
 	request.Namespace = ""
-	err := r.Get(context.TODO(), request.NamespacedName, instance)
+	err := r.Get(context.TODO(), request.NamespacedName, suite)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			// Object not found, return.  Created objects are automatically garbage collected.
 			// For additional cleanup logic use finalizers.
 			return reconcile.Result{}, nil
@@ -115,57 +145,88 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	// TODO(user): Change this to be the object type created by your controller
-	// Define the desired Deployment object
-	deploy := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      instance.Name + "-deployment",
-			Namespace: "default",
-		},
-		Spec: appsv1.DeploymentSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"deployment": instance.Name + "-deployment"},
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"deployment": instance.Name + "-deployment"}},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:  "nginx",
-							Image: "nginx",
-						},
-					},
-				},
-			},
-		},
+	suiteCopy := suite.DeepCopy()
+
+	if r.isUninitialized(*suiteCopy) {
+		r.loggerForSuite(*suiteCopy).Info("Initialize suite")
+		testDefs, err := r.findMatchingTestDefs(*suiteCopy)
+		if err != nil {
+			return reconcile.Result{}, errors.Wrapf(err, "while looking for matching test definitions for suite [%s]", suiteCopy)
+		}
+		currStatus, err := r.initializeTests(*suiteCopy, testDefs)
+		if err != nil {
+			return reconcile.Result{}, errors.Wrapf(err, "while initializing tests for suite [%s]", suiteCopy)
+		}
+		suiteCopy.Status = *currStatus
+		if err := r.Client.Status().Update(ctx, suiteCopy); err != nil {
+			return reconcile.Result{}, errors.Wrapf(err, "while updating status of initialized suite [%s]", suiteCopy)
+		}
+		return reconcile.Result{Requeue: true}, nil
 	}
-	if err := controllerutil.SetControllerReference(instance, deploy, r.scheme); err != nil {
-		return reconcile.Result{}, err
+	if r.isFinished(*suiteCopy) {
+		r.loggerForSuite(*suiteCopy).Info("Do nothing, suite is finished")
+		return reconcile.Result{}, nil
 	}
 
-	// TODO(user): Change this for the object type created by your controller
-	// Check if the Deployment already exists
-	found := &appsv1.Deployment{}
-	err = r.Get(context.TODO(), types.NamespacedName{Name: deploy.Name, Namespace: deploy.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		log.Info("Creating Deployment", "namespace", deploy.Namespace, "name", deploy.Name)
-		err = r.Create(context.TODO(), deploy)
-		if err != nil {
-			return reconcile.Result{}, err
+	r.loggerForSuite(*suiteCopy).Info("Ensuring status is up-to-date")
+	currStatus, err := r.ensureStatusIsUpToDate(*suiteCopy)
+	if err != nil {
+		return reconcile.Result{}, errors.Wrapf(err, "while ensuring status is up-to-date for suite [%s]", suiteCopy)
+	}
+	suiteCopy.Status = *currStatus
+	pod, currStatus, err := r.tryScheduleTest(*suiteCopy)
+	if err != nil {
+		return reconcile.Result{}, errors.Wrapf(err, "while scheduling next testing pod for suite [%s]", suiteCopy)
+	}
+	if pod != nil {
+		r.loggerForSuite(*suiteCopy).Info("Testing pod [name %s, namespace: %s] created")
+
+		if err := controllerutil.SetControllerReference(suiteCopy, pod, r.scheme); err != nil {
+			return reconcile.Result{}, errors.Wrapf(err, "while setting controller reference, suite [%s], pod [name %s, namespace: %s]", suiteCopy, pod.Name, pod.Namespace)
 		}
-	} else if err != nil {
-		return reconcile.Result{}, err
+	}
+	suiteCopy.Status = *currStatus
+
+	if err := r.Client.Status().Update(ctx, suiteCopy); err != nil {
+		return reconcile.Result{}, errors.Wrapf(err, "while updating status of running suite [%s]", suiteCopy)
 	}
 
-	// TODO(user): Change this for the object type created by your controller
-	// Update the found object and write the result back if there are any changes
-	if !reflect.DeepEqual(deploy.Spec, found.Spec) {
-		found.Spec = deploy.Spec
-		log.Info("Updating Deployment", "namespace", deploy.Namespace, "name", deploy.Name)
-		err = r.Update(context.TODO(), found)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
+	if pod != nil {
+		return reconcile.Result{Requeue: true}, nil
 	}
-	return reconcile.Result{}, nil
+
+	return reconcile.Result{Requeue: true, RequeueAfter: defaultRequeueAfter}, nil
+}
+
+func (r *ReconcileTestSuite) loggerForSuite(suite testingv1alpha1.ClusterTestSuite) logr.Logger {
+	return log.WithValues("current", suite)
+}
+
+func (r *ReconcileTestSuite) isUninitialized(suite testingv1alpha1.ClusterTestSuite) bool {
+	return r.statusService.IsUninitialized(suite)
+}
+
+func (r *ReconcileTestSuite) isFinished(suite testingv1alpha1.ClusterTestSuite) bool {
+	return r.statusService.IsFinished(suite)
+}
+
+func (r *ReconcileTestSuite) initializeTests(suite testingv1alpha1.ClusterTestSuite, defs []testingv1alpha1.TestDefinition) (*testingv1alpha1.TestSuiteStatus, error) {
+	return r.statusService.InitializeTests(suite, defs)
+}
+
+func (r *ReconcileTestSuite) findMatchingTestDefs(suite testingv1alpha1.ClusterTestSuite) ([]testingv1alpha1.TestDefinition, error) {
+	return r.definitionService.FindMatching(suite)
+}
+
+func (r *ReconcileTestSuite) ensureStatusIsUpToDate(suite testingv1alpha1.ClusterTestSuite) (*testingv1alpha1.TestSuiteStatus, error) {
+	pods, err := r.reporter.GetPodsForSuite(suite)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.statusService.EnsureStatusIsUpToDate(suite, pods)
+}
+
+func (r *ReconcileTestSuite) tryScheduleTest(suite testingv1alpha1.ClusterTestSuite) (*corev1.Pod, *testingv1alpha1.TestSuiteStatus, error) {
+	return r.scheduler.TrySchedule(suite)
 }
