@@ -27,33 +27,125 @@ func (s *Service) EnsureStatusIsUpToDate(suite v1alpha1.ClusterTestSuite, pods [
 				// find execution
 				for execID, exec := range tr.Executions {
 					if exec.ID == pod.Name {
-						out.Results[resultID].Executions[execID].Status = s.getExecutionStatusFromPodPhase(pod)
-						// TODO
+						prev := exec.PodPhase
+						if pod.Status.Phase != prev {
+							out.Results[resultID].Executions[execID] = s.adjustTestExec(exec, pod)
+						}
 					}
 				}
 			}
 		}
 	}
+
+	for idx, res := range out.Results {
+		newState := s.calculateTestStatus(res)
+		if res.Status != newState {
+			out.Results[idx].Status = newState
+		}
+	}
+	adjusted := s.adjustSuiteCondition(*out)
+	out = &adjusted
 	// TODO what to do with incosistencies?
-	return nil, nil
+	return out, nil
 }
 
-func (s *Service) getExecutionStatusFromPodPhase(pod v1.Pod) v1alpha1.TestExecutionStatus {
-	switch pod.Status.Phase {
-	case v1.PodPending:
-		return v1alpha1.TestScheduled
-	case v1.PodRunning:
-		return v1alpha1.TestRunning
-	case v1.PodSucceeded:
-		return v1alpha1.TestSucceed
-	case v1.PodFailed:
-		return v1alpha1.TestFailed
-	case v1.PodUnknown:
-		return v1alpha1.TestNotYetScheduled
-
+func (s *Service) adjustTestExec(exec v1alpha1.TestExecution, pod v1.Pod) v1alpha1.TestExecution {
+	exec.PodPhase = pod.Status.Phase
+	if exec.PodPhase == v1.PodSucceeded {
+		exec.CompletionTime = &metav1.Time{Time: s.nowProvider()}
+	} else if exec.PodPhase == v1.PodFailed {
+		exec.CompletionTime = &metav1.Time{Time: s.nowProvider()}
+		exec.Reason = pod.Status.Reason
+		exec.Message = pod.Status.Message
 	}
-	return v1alpha1.TestNotYetScheduled
+	return exec
+}
 
+func (s *Service) calculateTestStatus(tr v1alpha1.TestResult) v1alpha1.TestStatus {
+	if len(tr.Executions) == 0 {
+		return v1alpha1.TestNotYetScheduled
+	}
+
+	var anyPending, anyRunning, anySucceeded, anyFailed, anyUnknown bool
+	for _, exec := range tr.Executions {
+		switch exec.PodPhase {
+		case v1.PodPending:
+			anyPending = true
+		case v1.PodFailed:
+			anyFailed = true
+		case v1.PodRunning:
+			anyRunning = true
+		case v1.PodSucceeded:
+			anySucceeded = true
+		case v1.PodUnknown:
+			anyUnknown = true
+		}
+	}
+	if anyPending || anyRunning {
+		return v1alpha1.TestRunning
+	}
+	if anyFailed {
+		return v1alpha1.TestFailed
+	}
+	if anyUnknown {
+		return v1alpha1.TestUnknown
+	}
+	if anySucceeded {
+		return v1alpha1.TestSucceeded
+	}
+
+	return v1alpha1.TestUnknown
+
+}
+
+func (s *Service) adjustSuiteCondition(stat v1alpha1.TestSuiteStatus) v1alpha1.TestSuiteStatus {
+	prevCond := s.getSuiteCondition(stat)
+
+	// TODO anySkipped,
+	var anyNotScheduled, anyScheduled, anyRunning, anyUnknown, anyFailed bool
+	var newCond v1alpha1.TestSuiteConditionType
+	for _, res := range stat.Results {
+		switch res.Status {
+		case v1alpha1.TestNotYetScheduled:
+			anyNotScheduled = true
+		case v1alpha1.TestScheduled:
+			anyScheduled = true
+
+		case v1alpha1.TestRunning:
+			anyRunning = true
+
+		case v1alpha1.TestUnknown:
+			anyUnknown = true
+
+		case v1alpha1.TestFailed:
+			anyFailed = true
+		}
+	}
+
+	if anyRunning || anyNotScheduled || anyScheduled {
+		newCond = v1alpha1.SuiteRunning
+	} else if anyFailed {
+		newCond = v1alpha1.SuiteFailed
+	} else if anyUnknown {
+		newCond = v1alpha1.SuiteError //TODO
+	} else {
+		newCond = v1alpha1.SuiteSucceeded
+	}
+
+	if newCond == prevCond {
+		return stat
+	}
+	s.SetSuiteCondition(&stat, newCond, "", "")
+	switch newCond {
+	case v1alpha1.SuiteFailed:
+		fallthrough
+	case v1alpha1.SuiteSucceeded:
+		fallthrough
+	case v1alpha1.SuiteError:
+		stat.CompletionTime = &metav1.Time{Time: s.nowProvider()}
+	}
+
+	return stat
 }
 
 func (s *Service) InitializeTests(suite v1alpha1.ClusterTestSuite, defs []v1alpha1.TestDefinition) (*v1alpha1.TestSuiteStatus, error) {
@@ -61,7 +153,7 @@ func (s *Service) InitializeTests(suite v1alpha1.ClusterTestSuite, defs []v1alph
 	out.StartTime = &metav1.Time{Time: s.nowProvider()}
 	if len(defs) == 0 {
 		out.CompletionTime = &metav1.Time{Time: s.nowProvider()}
-		s.SetSuiteCondition(out, v1alpha1.SuiteSucceed, "", "")
+		s.SetSuiteCondition(out, v1alpha1.SuiteSucceeded, "", "")
 		return out, nil
 	}
 	s.SetSuiteCondition(out, v1alpha1.SuiteRunning, "", "")
@@ -70,6 +162,7 @@ func (s *Service) InitializeTests(suite v1alpha1.ClusterTestSuite, defs []v1alph
 		out.Results[idx] = v1alpha1.TestResult{
 			Name:       def.Name,
 			Namespace:  def.Namespace,
+			Status:     v1alpha1.TestNotYetScheduled,
 			Executions: make([]v1alpha1.TestExecution, 0),
 		}
 	}
@@ -121,18 +214,27 @@ func (s *Service) IsUninitialized(suite v1alpha1.ClusterTestSuite) bool {
 }
 
 func (s *Service) IsFinished(suite v1alpha1.ClusterTestSuite) bool {
-	return s.isConditionSet(suite, v1alpha1.SuiteError) ||
-		s.isConditionSet(suite, v1alpha1.SuiteFailed) ||
-		s.isConditionSet(suite, v1alpha1.SuiteSucceed)
+	return s.isConditionSet(suite.Status, v1alpha1.SuiteError) ||
+		s.isConditionSet(suite.Status, v1alpha1.SuiteFailed) ||
+		s.isConditionSet(suite.Status, v1alpha1.SuiteSucceeded)
 }
 
-func (s *Service) isConditionSet(suite v1alpha1.ClusterTestSuite, tp v1alpha1.TestSuiteConditionType) bool {
-	for _, cond := range suite.Status.Conditions {
+func (s *Service) isConditionSet(stat v1alpha1.TestSuiteStatus, tp v1alpha1.TestSuiteConditionType) bool {
+	for _, cond := range stat.Conditions {
 		if cond.Type == tp && cond.Status == v1alpha1.StatusTrue {
 			return true
 		}
 	}
 	return false
+}
+
+func (s *Service) getSuiteCondition(stat v1alpha1.TestSuiteStatus) v1alpha1.TestSuiteConditionType {
+	for _, cond := range stat.Conditions {
+		if cond.Status == v1alpha1.StatusTrue {
+			return cond.Type
+		}
+	}
+	return v1alpha1.SuiteUninitialized
 }
 
 func (s *Service) GetNextToSchedule(suite v1alpha1.ClusterTestSuite) (*v1alpha1.TestResult, error) {
@@ -148,12 +250,13 @@ func (s *Service) GetNextToSchedule(suite v1alpha1.ClusterTestSuite) (*v1alpha1.
 
 func (s *Service) MarkAsScheduled(status v1alpha1.TestSuiteStatus, testName, testNs, podName string) (v1alpha1.TestSuiteStatus, error) {
 	// TODO mark whole suite as started if needed
+	// TODO deep copy
 	for _, tr := range status.Results {
 		if tr.Name == testName && tr.Namespace == testNs {
+			tr.Status = v1alpha1.TestScheduled
 			tr.Executions = append(tr.Executions, v1alpha1.TestExecution{
 				ID:        podName,
 				StartTime: &metav1.Time{Time: s.nowProvider()},
-				Status:    v1alpha1.TestScheduled,
 			})
 
 			return status, nil

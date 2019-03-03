@@ -28,7 +28,7 @@ func TestTryScheduleHappyPath(t *testing.T) {
 
 	scheduledSuite := uninitializedSuite.DeepCopy()
 	scheduledSuite.Status.Conditions[0].Type = v1alpha1.SuiteRunning
-	scheduledSuite.Status.Results[0].Executions = []v1alpha1.TestExecution{{ID: "octopus-testing-pod-0", Status: v1alpha1.TestRunning}}
+	scheduledSuite.Status.Results[0].Executions = []v1alpha1.TestExecution{{ID: "octopus-testing-pod-0", PodPhase: v12.PodRunning}}
 
 	mockStatusProvider := &automock.StatusProvider{}
 	defer mockStatusProvider.AssertExpectations(t)

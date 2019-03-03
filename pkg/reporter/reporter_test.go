@@ -61,7 +61,7 @@ func TestGetPodsForSuite(t *testing.T) {
 	// THEN
 	require.NoError(t, err)
 	require.Len(t, actualPods, 1)
-	assert.Equal(t,pod1, actualPods[0])
+	assert.Equal(t, pod1, actualPods[0])
 
 }
 
@@ -71,11 +71,11 @@ func TestGetPodsForSuiteOnError(t *testing.T) {
 	}}
 
 	mockReader := &automock.Reader{}
-	mockReader.On("List",mock.Anything, mock.Anything, mock.Anything).Return(errors.New("some error"))
+	mockReader.On("List", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("some error"))
 	defer mockReader.AssertExpectations(t)
 	sut := reporter.NewService(mockReader)
 	// WHEN
 	_, err := sut.GetPodsForSuite(givenSuite)
 	// THEN
-	require.EqualError(t,err,"while getting pods for suite [test-all-suite]: some error")
+	require.EqualError(t, err, "while getting pods for suite [test-all-suite]: some error")
 }

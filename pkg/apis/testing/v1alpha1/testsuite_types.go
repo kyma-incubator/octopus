@@ -17,12 +17,13 @@ package v1alpha1
 
 import (
 	"fmt"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type TestSuiteConditionType string
 type Status string
-type TestExecutionStatus string
+type TestStatus string
 
 const (
 	StatusTrue    Status = "True"
@@ -30,6 +31,7 @@ const (
 	StatusUnknown Status = "Unknown"
 
 	// SuiteUninitialized is when suite has not yet determined tests to run
+	// TODO set it as a default values/initialized value
 	SuiteUninitialized TestSuiteConditionType = "Uninitialized"
 	// When tests are running
 	SuiteRunning TestSuiteConditionType = "Running"
@@ -38,17 +40,17 @@ const (
 	// When suite is finished and there were failing tests
 	SuiteFailed TestSuiteConditionType = "Failed"
 	// When all tests passed
-	SuiteSucceed TestSuiteConditionType = "Succeed"
+	SuiteSucceeded TestSuiteConditionType = "Succeeded"
 
 	// Test is not yet scheduled
-	TestNotYetScheduled TestExecutionStatus = "NotYetScheduled"
+	TestNotYetScheduled TestStatus = "NotYetScheduled"
 	// Test is running
-	TestScheduled TestExecutionStatus = "Scheduled" // TODO do we need both of them?
-	TestRunning TestExecutionStatus = "Running"
-	TestError   TestExecutionStatus = "Error"
-	TestFailed  TestExecutionStatus = "Failed"
-	TestSucceed TestExecutionStatus = "Succeed"
-	TestSkipped TestExecutionStatus = "Skipped"
+	TestScheduled TestStatus = "Scheduled" // TODO do we need both of them?
+	TestRunning   TestStatus = "Running"
+	TestUnknown   TestStatus = "Unknown"
+	TestFailed    TestStatus = "Failed"
+	TestSucceeded TestStatus = "Succeeded"
+	TestSkipped   TestStatus = "Skipped"
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -133,17 +135,18 @@ type TestResult struct {
 	// Test name
 	Name       string          `json:"name"`
 	Namespace  string          `json:"namespace"`
+	Status     TestStatus      `json:"status"`
 	Executions []TestExecution `json:"executions"`
 }
 
 // TestExecution provides status for given test execution
 type TestExecution struct {
-	ID             string              `json:"id"` // ID is equivalent to a testing Pod name
-	Status         TestExecutionStatus `json:"status"`
-	StartTime      *metav1.Time        `json:"startTime,inline,omitempty"`
-	CompletionTime *metav1.Time        `json:"completionTime,inline,omitempty"`
-	Reason         string              `json:"reason"`
-	Message        string              `json:"message"`
+	ID             string       `json:"id"` // ID is equivalent to a testing Pod name
+	PodPhase       v1.PodPhase  `json:"podPhase"`
+	StartTime      *metav1.Time `json:"startTime,inline,omitempty"`
+	CompletionTime *metav1.Time `json:"completionTime,inline,omitempty"`
+	Reason         string       `json:"reason"`
+	Message        string       `json:"message"`
 }
 
 func init() {

@@ -54,7 +54,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 		scheduler:         &scheduler.Service{},
 		statusService:     &status.Service{},
 		definitionService: def.NewService(mgr.GetClient()),
-		reporter:          &reporter.Service{},}
+		reporter:          &reporter.Service{}}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler

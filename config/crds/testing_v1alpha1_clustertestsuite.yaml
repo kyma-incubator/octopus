@@ -105,14 +105,14 @@ spec:
                           type: string
                         message:
                           type: string
-                        reason:
-                          type: string
-                        status:
+                        podPhase:
                           description: ID is equivalent to a testing Pod name
+                          type: string
+                        reason:
                           type: string
                       required:
                       - id
-                      - status
+                      - podPhase
                       - reason
                       - message
                       type: object
@@ -122,9 +122,12 @@ spec:
                     type: string
                   namespace:
                     type: string
+                  status:
+                    type: string
                 required:
                 - name
                 - namespace
+                - status
                 - executions
                 type: object
               type: array
