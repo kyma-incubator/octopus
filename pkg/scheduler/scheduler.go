@@ -83,7 +83,7 @@ func (s *Service) startPod(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDef
 
 	err := s.writer.Create(context.TODO(), p)
 	if err != nil {
-		return nil, errors.Wrapf(err, "while creating testing pod for suite [%s] and test definition [name: %s, namespace: %s]", suite, def.Name, def.Namespace)
+		return nil, errors.Wrapf(err, "while creating testing pod for suite [%s] and test definition [name: %s, namespace: %s]", suite.String(), def.Name, def.Namespace)
 	}
 	return p, nil
 }

@@ -48,13 +48,16 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
+	statusSrv := status.NewService(time.Now)
+	schedulerSrv := scheduler.NewService(statusSrv, mgr.GetClient(), mgr.GetClient())
+	reporterSrv := reporter.NewService(mgr.GetClient())
 	return &ReconcileTestSuite{
 		Client:            mgr.GetClient(),
 		scheme:            mgr.GetScheme(),
-		scheduler:         &scheduler.Service{},
-		statusService:     &status.Service{},
+		scheduler:         schedulerSrv,
+		statusService:     statusSrv,
 		definitionService: def.NewService(mgr.GetClient()),
-		reporter:          &reporter.Service{}}
+		reporter:          reporterSrv}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -171,24 +174,24 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 	r.loggerForSuite(*suiteCopy).Info("Ensuring status is up-to-date")
 	currStatus, err := r.ensureStatusIsUpToDate(*suiteCopy)
 	if err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "while ensuring status is up-to-date for suite [%s]", suiteCopy)
+		return reconcile.Result{}, errors.Wrapf(err, "while ensuring status is up-to-date for suite [%s]", suiteCopy.String())
 	}
 	suiteCopy.Status = *currStatus
 	pod, currStatus, err := r.tryScheduleTest(*suiteCopy)
 	if err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "while scheduling next testing pod for suite [%s]", suiteCopy)
+		return reconcile.Result{}, errors.Wrapf(err, "while scheduling next testing pod for suite [%s]", suiteCopy.String())
 	}
 	if pod != nil {
-		r.loggerForSuite(*suiteCopy).Info("Testing pod [name %s, namespace: %s] created")
+		r.loggerForSuite(*suiteCopy).Info("Testing pod [name %s, namespace: %s] created", pod.Name, pod.Namespace)
 
 		if err := controllerutil.SetControllerReference(suiteCopy, pod, r.scheme); err != nil {
-			return reconcile.Result{}, errors.Wrapf(err, "while setting controller reference, suite [%s], pod [name %s, namespace: %s]", suiteCopy, pod.Name, pod.Namespace)
+			return reconcile.Result{}, errors.Wrapf(err, "while setting controller reference, suite [%s], pod [name %s, namespace: %s]", suiteCopy.String(), pod.Name, pod.Namespace)
 		}
+		suiteCopy.Status = *currStatus
 	}
-	suiteCopy.Status = *currStatus
 
 	if err := r.Client.Status().Update(ctx, suiteCopy); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "while updating status of running suite [%s]", suiteCopy)
+		return reconcile.Result{}, errors.Wrapf(err, "while updating status of running suite [%s]", suiteCopy.String())
 	}
 
 	if pod != nil {
@@ -199,7 +202,7 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 }
 
 func (r *ReconcileTestSuite) loggerForSuite(suite testingv1alpha1.ClusterTestSuite) logr.Logger {
-	return log.WithValues("current", suite)
+	return log.WithValues("current", suite.String())
 }
 
 func (r *ReconcileTestSuite) isUninitialized(suite testingv1alpha1.ClusterTestSuite) bool {

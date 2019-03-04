@@ -18,6 +18,11 @@ install: manifests
 	kubectl apply -f config/crds
 	kubectl apply -f config/samples
 
+cleanup:
+	kubectl delete pods -l testing.kyma-project.io/created-by-octopus=true
+	kubectl delete -f config/samples
+
+
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
 	kubectl apply -f config/crds

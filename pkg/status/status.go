@@ -249,12 +249,10 @@ func (s *Service) GetNextToSchedule(suite v1alpha1.ClusterTestSuite) (*v1alpha1.
 }
 
 func (s *Service) MarkAsScheduled(status v1alpha1.TestSuiteStatus, testName, testNs, podName string) (v1alpha1.TestSuiteStatus, error) {
-	// TODO mark whole suite as started if needed
-	// TODO deep copy
-	for _, tr := range status.Results {
+	for idx, tr := range status.Results {
 		if tr.Name == testName && tr.Namespace == testNs {
-			tr.Status = v1alpha1.TestScheduled
-			tr.Executions = append(tr.Executions, v1alpha1.TestExecution{
+			status.Results[idx].Status = v1alpha1.TestScheduled
+			status.Results[idx].Executions = append(status.Results[idx].Executions, v1alpha1.TestExecution{
 				ID:        podName,
 				StartTime: &metav1.Time{Time: s.nowProvider()},
 			})

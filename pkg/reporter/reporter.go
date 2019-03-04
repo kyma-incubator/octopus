@@ -18,7 +18,6 @@ func NewService(cli client.Reader) *Service {
 }
 
 type Service struct {
-	//go:gen
 	cli client.Reader
 }
 

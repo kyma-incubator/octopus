@@ -642,8 +642,46 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 
 func TestMarkAsScheduled(t *testing.T) {
 	// GIVEN
+	sut := status.NewService(mockNowProvider())
 	// WHEN
+	actStatus, err := sut.MarkAsScheduled(v1alpha1.TestSuiteStatus{
+		Conditions: []v1alpha1.TestSuiteCondition{
+			{
+				Type: v1alpha1.SuiteRunning,
+			},
+		},
+		StartTime: &v1.Time{Time: getTimeInPast()},
+		Results: []v1alpha1.TestResult{
+			{
+				Name:      "test-a",
+				Namespace: "default",
+				Status:    v1alpha1.TestNotYetScheduled,
+			},
+		},
+	}, "test-a", "default", "octopus-testing-pod-123")
 	// THEN
+	require.NoError(t, err)
+	require.Equal(t, v1alpha1.TestSuiteStatus{
+		Conditions: []v1alpha1.TestSuiteCondition{
+			{
+				Type: v1alpha1.SuiteRunning,
+			},
+		},
+		StartTime: &v1.Time{Time: getTimeInPast()},
+		Results: []v1alpha1.TestResult{
+			{
+				Name:      "test-a",
+				Namespace: "default",
+				Status:    v1alpha1.TestScheduled,
+				Executions: []v1alpha1.TestExecution{
+					{
+						ID:        "octopus-testing-pod-123",
+						StartTime: &v1.Time{Time: getStartTime()},
+					},
+				},
+			},
+		},
+	}, actStatus)
 }
 
 func mockNowProvider() func() time.Time {
