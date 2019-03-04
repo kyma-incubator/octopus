@@ -1,8 +1,8 @@
-package def_test
+package definition_test
 
 import (
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
-	"github.com/kyma-incubator/octopus/pkg/def"
+	"github.com/kyma-incubator/octopus/pkg/definition"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,7 +20,7 @@ func TestFindMatching(t *testing.T) {
 			Namespace: "anynamespace",
 		},
 	})
-	service := def.NewService(fakeCli)
+	service := definition.NewService(fakeCli)
 	// WHEN
 	out, err := service.FindMatching(v1alpha1.ClusterTestSuite{})
 	// THEN

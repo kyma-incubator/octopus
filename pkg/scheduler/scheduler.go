@@ -77,13 +77,13 @@ func (s *Service) startPod(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDef
 		p.Labels = make(map[string]string)
 	}
 	p.Labels[consts.LabelKeySuiteName] = suite.Name
-	p.Labels[consts.LabelTestDefName] = def.Name
+	p.Labels[consts.LabelKeyTestDefName] = def.Name
 	p.Labels[consts.LabelKeyCreatedByOctopus] = "true"
 	p.Spec.RestartPolicy = v1.RestartPolicyNever
 
 	err := s.writer.Create(context.TODO(), p)
 	if err != nil {
-		return nil, errors.Wrapf(err, "while creating testing pod for suite [%s] and test definition [name: %s, namespace: %s]", suite.String(), def.Name, def.Namespace)
+		return nil, errors.Wrapf(err, "while creating testing pod for suite [%s] and test definition [name: %s, namespace: %s]", suite.Name, def.Name, def.Namespace)
 	}
 	return p, nil
 }

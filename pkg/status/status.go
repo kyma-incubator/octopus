@@ -23,7 +23,7 @@ func (s *Service) EnsureStatusIsUpToDate(suite v1alpha1.ClusterTestSuite, pods [
 	out := suite.Status.DeepCopy()
 	for _, pod := range pods {
 		for resultID, tr := range out.Results {
-			if tr.Name == pod.Labels[consts.LabelTestDefName] && tr.Namespace == pod.Namespace {
+			if tr.Name == pod.Labels[consts.LabelKeyTestDefName] && tr.Namespace == pod.Namespace {
 				// find execution
 				for execID, exec := range tr.Executions {
 					if exec.ID == pod.Name {
@@ -45,7 +45,7 @@ func (s *Service) EnsureStatusIsUpToDate(suite v1alpha1.ClusterTestSuite, pods [
 	}
 	adjusted := s.adjustSuiteCondition(*out)
 	out = &adjusted
-	// TODO what to do with incosistencies?
+	// TODO later what to do with incosistencies?
 	return out, nil
 }
 
@@ -101,7 +101,7 @@ func (s *Service) calculateTestStatus(tr v1alpha1.TestResult) v1alpha1.TestStatu
 func (s *Service) adjustSuiteCondition(stat v1alpha1.TestSuiteStatus) v1alpha1.TestSuiteStatus {
 	prevCond := s.getSuiteCondition(stat)
 
-	// TODO anySkipped,
+	// TODO later anySkipped,
 	var anyNotScheduled, anyScheduled, anyRunning, anyUnknown, anyFailed bool
 	var newCond v1alpha1.TestSuiteConditionType
 	for _, res := range stat.Results {
@@ -127,7 +127,7 @@ func (s *Service) adjustSuiteCondition(stat v1alpha1.TestSuiteStatus) v1alpha1.T
 	} else if anyFailed {
 		newCond = v1alpha1.SuiteFailed
 	} else if anyUnknown {
-		newCond = v1alpha1.SuiteError //TODO
+		newCond = v1alpha1.SuiteError //TODO later
 	} else {
 		newCond = v1alpha1.SuiteSucceeded
 	}
@@ -238,7 +238,7 @@ func (s *Service) getSuiteCondition(stat v1alpha1.TestSuiteStatus) v1alpha1.Test
 }
 
 func (s *Service) GetNextToSchedule(suite v1alpha1.ClusterTestSuite) (*v1alpha1.TestResult, error) {
-	// TODO no count, no retries
+	// TODO later no count, no retries
 	for _, tr := range suite.Status.Results {
 		if len(tr.Executions) == 0 {
 			return &tr, nil

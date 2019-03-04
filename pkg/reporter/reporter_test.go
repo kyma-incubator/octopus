@@ -19,7 +19,7 @@ import (
 
 func TestGetPodsForSuite(t *testing.T) {
 	// GIVEN
-	pod1 := v1.Pod{
+	givenPod := v1.Pod{
 		ObjectMeta: v12.ObjectMeta{
 			Name:      fmt.Sprintf("%s%d", consts.TestingPodGeneratedName, 1),
 			Namespace: "aaa",
@@ -41,7 +41,7 @@ func TestGetPodsForSuite(t *testing.T) {
 		if listOptions.Namespace != "" {
 			return false
 		}
-		if !listOptions.LabelSelector.Matches(labels.Set(pod1.Labels)) {
+		if !listOptions.LabelSelector.Matches(labels.Set(givenPod.Labels)) {
 			return false
 		}
 		return true
@@ -52,7 +52,7 @@ func TestGetPodsForSuite(t *testing.T) {
 		Run(func(args mock.Arguments) {
 			podList, ok := args.Get(2).(*v1.PodList)
 			if ok {
-				podList.Items = []v1.Pod{pod1}
+				podList.Items = []v1.Pod{givenPod}
 			}
 		})
 	sut := reporter.NewService(mockReader)
@@ -61,7 +61,7 @@ func TestGetPodsForSuite(t *testing.T) {
 	// THEN
 	require.NoError(t, err)
 	require.Len(t, actualPods, 1)
-	assert.Equal(t, pod1, actualPods[0])
+	assert.Equal(t, givenPod, actualPods[0])
 
 }
 

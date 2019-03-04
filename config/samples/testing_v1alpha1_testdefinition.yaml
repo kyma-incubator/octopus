@@ -17,4 +17,4 @@ spec:
         - name: test
           image: alpine:latest
           command:
-            - "pwd345"
+            - "pwd"

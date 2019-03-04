@@ -16,7 +16,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -31,7 +30,7 @@ const (
 	StatusUnknown Status = "Unknown"
 
 	// SuiteUninitialized is when suite has not yet determined tests to run
-	// TODO set it as a default values/initialized value
+	// TODO later set it as a default values/initialized value
 	SuiteUninitialized TestSuiteConditionType = "Uninitialized"
 	// When tests are running
 	SuiteRunning TestSuiteConditionType = "Running"
@@ -42,10 +41,13 @@ const (
 	// When all tests passed
 	SuiteSucceeded TestSuiteConditionType = "Succeeded"
 
+	// TestStatus represents status of a given test (test-kubeless) , not a test execution, because we can have many
+	// executions of the same tests (in case of MaxRetries>0 or Count>1)
+	//
 	// Test is not yet scheduled
 	TestNotYetScheduled TestStatus = "NotYetScheduled"
 	// Test is running
-	TestScheduled TestStatus = "Scheduled" // TODO do we need both of them?
+	TestScheduled TestStatus = "Scheduled" // TODO later do we need both of them?
 	TestRunning   TestStatus = "Running"
 	TestUnknown   TestStatus = "Unknown"
 	TestFailed    TestStatus = "Failed"
@@ -151,11 +153,4 @@ type TestExecution struct {
 
 func init() {
 	SchemeBuilder.Register(&ClusterTestSuite{}, &ClusterTestSuiteList{})
-}
-
-func (s *ClusterTestSuite) String() string {
-	if s == nil {
-		return "nil"
-	}
-	return fmt.Sprintf("ClusterTestSuite {Name: %s}", s.Name)
 }

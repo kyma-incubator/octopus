@@ -19,7 +19,7 @@ import (
 	"context"
 	"github.com/go-logr/logr"
 	testingv1alpha1 "github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
-	"github.com/kyma-incubator/octopus/pkg/def"
+	"github.com/kyma-incubator/octopus/pkg/definition"
 	"github.com/kyma-incubator/octopus/pkg/reporter"
 	"github.com/kyma-incubator/octopus/pkg/scheduler"
 	"github.com/kyma-incubator/octopus/pkg/status"
@@ -56,7 +56,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 		scheme:            mgr.GetScheme(),
 		scheduler:         schedulerSrv,
 		statusService:     statusSrv,
-		definitionService: def.NewService(mgr.GetClient()),
+		definitionService: definition.NewService(mgr.GetClient()),
 		reporter:          reporterSrv}
 }
 
@@ -88,26 +88,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 }
 
 var _ reconcile.Reconciler = &ReconcileTestSuite{}
-
-// dependencies
-type TestScheduler interface {
-	TrySchedule(suite testingv1alpha1.ClusterTestSuite) (*corev1.Pod, *testingv1alpha1.TestSuiteStatus, error)
-}
-
-type TestReporter interface {
-	GetPodsForSuite(suite testingv1alpha1.ClusterTestSuite) ([]corev1.Pod, error)
-}
-
-type SuiteStatusService interface {
-	EnsureStatusIsUpToDate(suite testingv1alpha1.ClusterTestSuite, pods []corev1.Pod) (*testingv1alpha1.TestSuiteStatus, error)
-	InitializeTests(suite testingv1alpha1.ClusterTestSuite, defs []testingv1alpha1.TestDefinition) (*testingv1alpha1.TestSuiteStatus, error)
-	IsUninitialized(suite testingv1alpha1.ClusterTestSuite) bool
-	IsFinished(suite testingv1alpha1.ClusterTestSuite) bool
-}
-
-type TestDefinitionService interface {
-	FindMatching(suite testingv1alpha1.ClusterTestSuite) ([]testingv1alpha1.TestDefinition, error)
-}
 
 // ReconcileTestSuite reconciles a ClusterTestSuite object
 type ReconcileTestSuite struct {
@@ -172,37 +152,38 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	r.loggerForSuite(*suiteCopy).Info("Ensuring status is up-to-date")
-	currStatus, err := r.ensureStatusIsUpToDate(*suiteCopy)
+	updatedStatus, err := r.ensureStatusIsUpToDate(*suiteCopy)
 	if err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "while ensuring status is up-to-date for suite [%s]", suiteCopy.String())
+		return reconcile.Result{}, errors.Wrapf(err, "while ensuring status is up-to-date for suite [%s]", suiteCopy.Name)
 	}
-	suiteCopy.Status = *currStatus
-	pod, currStatus, err := r.tryScheduleTest(*suiteCopy)
+	suiteCopy.Status = *updatedStatus
+	pod, updatedStatus, err := r.tryScheduleTest(*suiteCopy)
 	if err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "while scheduling next testing pod for suite [%s]", suiteCopy.String())
+		return reconcile.Result{}, errors.Wrapf(err, "while scheduling next testing pod for suite [%s]", suiteCopy.Name)
 	}
 	if pod != nil {
-		r.loggerForSuite(*suiteCopy).Info("Testing pod [name %s, namespace: %s] created", pod.Name, pod.Namespace)
+		r.loggerForSuite(*suiteCopy).Info("Testing pod created", "podName", pod.Name, "podNs", pod.Namespace)
 
 		if err := controllerutil.SetControllerReference(suiteCopy, pod, r.scheme); err != nil {
-			return reconcile.Result{}, errors.Wrapf(err, "while setting controller reference, suite [%s], pod [name %s, namespace: %s]", suiteCopy.String(), pod.Name, pod.Namespace)
+			return reconcile.Result{}, errors.Wrapf(err, "while setting controller reference, suite [%s], pod [name %s, namespace: %s]", suiteCopy.Name, pod.Name, pod.Namespace)
 		}
-		suiteCopy.Status = *currStatus
+		suiteCopy.Status = *updatedStatus
 	}
 
 	if err := r.Client.Status().Update(ctx, suiteCopy); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "while updating status of running suite [%s]", suiteCopy.String())
+		return reconcile.Result{}, errors.Wrapf(err, "while updating status of running suite", "name", suiteCopy.Name)
 	}
 
 	if pod != nil {
+		// requeue immediatelly to try schedule other tests
 		return reconcile.Result{Requeue: true}, nil
 	}
 
-	return reconcile.Result{Requeue: true, RequeueAfter: defaultRequeueAfter}, nil
+	return reconcile.Result{Requeue: true, RequeueAfter: time.Second}, nil
 }
 
 func (r *ReconcileTestSuite) loggerForSuite(suite testingv1alpha1.ClusterTestSuite) logr.Logger {
-	return log.WithValues("current", suite.String())
+	return log.WithValues("suite", suite.Name)
 }
 
 func (r *ReconcileTestSuite) isUninitialized(suite testingv1alpha1.ClusterTestSuite) bool {
@@ -232,4 +213,24 @@ func (r *ReconcileTestSuite) ensureStatusIsUpToDate(suite testingv1alpha1.Cluste
 
 func (r *ReconcileTestSuite) tryScheduleTest(suite testingv1alpha1.ClusterTestSuite) (*corev1.Pod, *testingv1alpha1.TestSuiteStatus, error) {
 	return r.scheduler.TrySchedule(suite)
+}
+
+// dependencies
+type TestScheduler interface {
+	TrySchedule(suite testingv1alpha1.ClusterTestSuite) (*corev1.Pod, *testingv1alpha1.TestSuiteStatus, error)
+}
+
+type TestReporter interface {
+	GetPodsForSuite(suite testingv1alpha1.ClusterTestSuite) ([]corev1.Pod, error)
+}
+
+type SuiteStatusService interface {
+	EnsureStatusIsUpToDate(suite testingv1alpha1.ClusterTestSuite, pods []corev1.Pod) (*testingv1alpha1.TestSuiteStatus, error)
+	InitializeTests(suite testingv1alpha1.ClusterTestSuite, defs []testingv1alpha1.TestDefinition) (*testingv1alpha1.TestSuiteStatus, error)
+	IsUninitialized(suite testingv1alpha1.ClusterTestSuite) bool
+	IsFinished(suite testingv1alpha1.ClusterTestSuite) bool
+}
+
+type TestDefinitionService interface {
+	FindMatching(suite testingv1alpha1.ClusterTestSuite) ([]testingv1alpha1.TestDefinition, error)
 }

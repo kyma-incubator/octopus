@@ -16,13 +16,20 @@ limitations under the License.
 package testsuite
 
 import (
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
+	"k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 	"testing"
 	"time"
 
 	testingv1alpha1 "github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 	"github.com/onsi/gomega"
 	"golang.org/x/net/context"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,15 +39,29 @@ import (
 
 var c client.Client
 
-var expectedRequest = reconcile.Request{NamespacedName: types.NamespacedName{Name: "foo"}}
-var depKey = types.NamespacedName{Name: "foo-deployment", Namespace: "default"}
-
 const timeout = time.Second * 5
 
 func TestReconcile(t *testing.T) {
-	t.SkipNow() // TODO
+	logf.SetLogger(logf.ZapLogger(false))
+
 	g := gomega.NewGomegaWithT(t)
-	instance := &testingv1alpha1.ClusterTestSuite{ObjectMeta: metav1.ObjectMeta{Name: "foo"}}
+	testDef := &testingv1alpha1.TestDefinition{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-ls-command", Namespace: "default"},
+		Spec: testingv1alpha1.TestDefinitionSpec{
+			Template: v1.PodTemplateSpec{
+
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:    "test",
+							Image:   "alpine:3.9",
+							Command: []string{"ls"}},
+					},
+				},
+			},
+		},
+	}
+	suite := &testingv1alpha1.ClusterTestSuite{ObjectMeta: metav1.ObjectMeta{Name: "suite-test-ls-command"}}
 
 	// Setup the Manager and Controller.  Wrap the Controller Reconcile function so it writes each request to a
 	// channel when it is finished.
@@ -58,30 +79,101 @@ func TestReconcile(t *testing.T) {
 		mgrStopped.Wait()
 	}()
 
-	// Create the ClusterTestSuite object and expect the Reconcile
-	err = c.Create(context.TODO(), instance)
-	// The instance object may not be a valid object because it might be missing some required fields.
-	// Please modify the instance object by adding required fields and then remove the following if statement.
-	if apierrors.IsInvalid(err) {
-		t.Logf("failed to create object, got an invalid object error: %v", err)
-		return
-	}
+	// Create the TestDefinition
+	err = c.Create(context.TODO(), testDef)
 	g.Expect(err).NotTo(gomega.HaveOccurred())
-	defer c.Delete(context.TODO(), instance)
+	defer c.Delete(context.TODO(), testDef)
 
-	g.Eventually(requests, timeout).Should(gomega.Receive(gomega.Equal(expectedRequest)))
-	//
-	//deploy := &appsv1.Deployment{}
-	//g.Eventually(func() error { return c.Get(context.TODO(), depKey, deploy) }, timeout).
-	//	Should(gomega.Succeed())
-	//
-	//// Delete the Deployment and expect Reconcile to be called for Deployment deletion
-	//g.Expect(c.Delete(context.TODO(), deploy)).NotTo(gomega.HaveOccurred())
-	//g.Eventually(requests, timeout).Should(gomega.Receive(gomega.Equal(expectedRequest)))
-	//g.Eventually(func() error { return c.Get(context.TODO(), depKey, deploy) }, timeout).
-	//	Should(gomega.Succeed())
-	//
-	//// Manually delete Deployment since GC isn't enabled in the test control plane
-	//g.Expect(c.Delete(context.TODO(), deploy)).To(gomega.Succeed())
+	// Create the ClusterTestSuite object and expect the Reconcile
+	err = c.Create(context.TODO(), suite)
+	g.Expect(err).NotTo(gomega.HaveOccurred())
+	defer c.Delete(context.TODO(), suite)
 
+	err = startMockPodController(mgr)
+	require.NoError(t, err)
+
+	go func() {
+		for {
+			// I don't care how many requests will be sent to my Reconciler, but I have to read all of them to not block
+			log.Info("Got reconcile request", "req", <-requests)
+		}
+	}()
+
+	g.Eventually(func() error {
+		var actualSuite testingv1alpha1.ClusterTestSuite
+		err := c.Get(context.TODO(), types.NamespacedName{Name: "suite-test-ls-command"}, &actualSuite)
+		if err != nil {
+			return err
+		}
+		if len(actualSuite.Status.Conditions) != 2 {
+			return errors.New("Should have 2 conditions")
+		}
+		suiteRunning := actualSuite.Status.Conditions[0].Type == testingv1alpha1.SuiteRunning && actualSuite.Status.Conditions[0].Status == testingv1alpha1.StatusTrue
+		if suiteRunning {
+			return errors.New("suite should not be running")
+		}
+		suiteSucceeded := actualSuite.Status.Conditions[1].Type == testingv1alpha1.SuiteSucceeded && actualSuite.Status.Conditions[1].Status == testingv1alpha1.StatusTrue
+		if !suiteSucceeded {
+			return errors.New("suite should be succeeded")
+		}
+
+		return nil
+	}, timeout).
+		Should(gomega.Succeed())
+
+}
+
+// We need to manually change status of Pod
+type mockPodReconciler struct {
+	cli client.Client
+}
+
+func (r *mockPodReconciler) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	pod := &v1.Pod{}
+	err := r.cli.Get(context.TODO(), request.NamespacedName, pod)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	log.WithName("mock pod controller").Info("got pod", "podName", pod.Name, "podPhase", pod.Status.Phase)
+	pod = pod.DeepCopy()
+	if pod.Status.Phase == v1.PodPending {
+		pod.Status.Phase = v1.PodRunning
+		r.getLogger().Info("starting pod", "podName", pod.Name)
+		err := r.cli.Status().Update(context.TODO(), pod)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		return reconcile.Result{}, nil
+	}
+	if pod.Status.Phase == v1.PodRunning {
+		pod.Status.Phase = v1.PodSucceeded
+		r.getLogger().Info("pod succeeded", "podName", pod.Name)
+		err := r.cli.Status().Update(context.TODO(), pod)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		return reconcile.Result{}, nil
+	}
+	return reconcile.Result{}, nil
+}
+
+func (r *mockPodReconciler) getLogger() logr.Logger {
+	return logf.Log.WithName("mock pod controller")
+}
+
+func startMockPodController(mgr manager.Manager) error {
+	pr := &mockPodReconciler{
+		cli: mgr.GetClient(),
+	}
+	c, err := controller.New("pod-controller", mgr, controller.Options{Reconciler: pr})
+	if err != nil {
+		return err
+	}
+
+	err = c.Watch(&source.Kind{Type: &v1.Pod{}}, &handler.EnqueueRequestForObject{})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

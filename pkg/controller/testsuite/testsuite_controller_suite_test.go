@@ -16,6 +16,7 @@ limitations under the License.
 package testsuite
 
 import (
+	"fmt"
 	stdlog "log"
 	"os"
 	"path/filepath"
@@ -37,6 +38,7 @@ func TestMain(m *testing.M) {
 	t := &envtest.Environment{
 		CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "config", "crds")},
 	}
+
 	apis.AddToScheme(scheme.Scheme)
 
 	var err error
@@ -55,6 +57,7 @@ func SetupTestReconcile(inner reconcile.Reconciler) (reconcile.Reconciler, chan 
 	requests := make(chan reconcile.Request)
 	fn := reconcile.Func(func(req reconcile.Request) (reconcile.Result, error) {
 		result, err := inner.Reconcile(req)
+		fmt.Println("Got request", req)
 		requests <- req
 		return result, err
 	})

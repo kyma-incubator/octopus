@@ -61,18 +61,52 @@ func TestTryScheduleHappyPath(t *testing.T) {
 	assert.Equal(t, "true", labelCreatedByOctopus)
 	labelSuiteName := pod.Labels[consts.LabelKeySuiteName]
 	assert.Equal(t, "test-all", labelSuiteName)
-	labelsTestName := pod.Labels[consts.LabelTestDefName]
+	labelsTestName := pod.Labels[consts.LabelKeyTestDefName]
 	assert.Equal(t, "test-name", labelsTestName)
 
 }
 
-func getFakeClient(initOjbects ...runtime.Object) (client.Client, error) {
+func TestTryScheduleNoMoreTests(t *testing.T) {
+	// GIVEN
+	fakeCli, err := getFakeClient()
+	require.NoError(t, err)
+	mockStatusProvider := &automock.StatusProvider{}
+	defer mockStatusProvider.AssertExpectations(t)
+	mockStatusProvider.On("GetNextToSchedule", mock.Anything).Return(nil, nil)
+	sut := scheduler.NewService(mockStatusProvider, fakeCli, fakeCli)
+	// WHEN
+	actualPod, actualStatus, err := sut.TrySchedule(givenUninitializedSuite(givenTestResult()))
+	// THEN
+	assert.NoError(t, err)
+	assert.Nil(t, actualPod)
+	assert.Nil(t, actualStatus)
+
+}
+
+func TestTryScheduleErrorOnGettingNextTest(t *testing.T) {
+	//TODO later
+}
+
+func TestTryScheduleErrorOnGettingTestDef(t *testing.T) {
+	//TODO later
+}
+
+func TestTryScheduleErrorOnSchedulingPod(t *testing.T) {
+	//TODO later
+}
+
+func TestTryScheduleErrorOnUpdatingStatus(t *testing.T) {
+	//TODO later
+}
+
+// fake clients which supports Occtopus CRDs
+func getFakeClient(initObjects ...runtime.Object) (client.Client, error) {
 	sch := scheme.Scheme
 	if err := v1alpha1.SchemeBuilder.AddToScheme(sch); err != nil {
 		return nil, err
 	}
 
-	fakeCli := fake.NewFakeClientWithScheme(sch, initOjbects...)
+	fakeCli := fake.NewFakeClientWithScheme(sch, initObjects...)
 	return fakeCli, nil
 }
 
@@ -125,39 +159,7 @@ func givenUninitializedSuite(givenTr v1alpha1.TestResult) v1alpha1.ClusterTestSu
 	return uninitializedSuite
 }
 
-func TestTryScheduleNoMoreTests(t *testing.T) {
-	// GIVEN
-	fakeCli, err := getFakeClient()
-	require.NoError(t, err)
-	mockStatusProvider := &automock.StatusProvider{}
-	defer mockStatusProvider.AssertExpectations(t)
-	mockStatusProvider.On("GetNextToSchedule", mock.Anything).Return(nil, nil)
-	sut := scheduler.NewService(mockStatusProvider, fakeCli, fakeCli)
-	// WHEN
-	actualPod, actualStatus, err := sut.TrySchedule(givenUninitializedSuite(givenTestResult()))
-	// THEN
-	assert.NoError(t, err)
-	assert.Nil(t, actualPod)
-	assert.Nil(t, actualStatus)
-
-}
-
-func TestTryScheduleErrorOnGettingNextTest(t *testing.T) {
-	//TODO
-}
-
-func TestTryScheduleErrorOnGettingTestDef(t *testing.T) {
-	//TODO
-}
-
-func TestTryScheduleErrorOnSchedulingPod(t *testing.T) {
-	//TODO
-}
-
-func TestTryScheduleErrorOnUpdatingStatus(t *testing.T) {
-	//TODO
-}
-
+// podWriterExtended generates name from generateName by appending index
 type podWriterExtended struct {
 	cli client.Writer
 	idx int
