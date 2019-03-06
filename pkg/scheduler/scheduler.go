@@ -70,7 +70,7 @@ func (s *Service) getDefinition(name, ns string) (v1alpha1.TestDefinition, error
 
 func (s *Service) startPod(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDefinition) (*v1.Pod, error) {
 	p := &v1.Pod{}
-
+	// TODO (aszeowka)(later) https://github.com/kubernetes/kubernetes/blob/master/pkg/controller/controller_utils.go#L517-L522
 	p.Spec = def.Spec.Template.Spec
 	p.Labels = def.Spec.Template.Labels
 	p.Annotations = def.Spec.Template.Annotations
