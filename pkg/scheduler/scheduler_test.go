@@ -35,11 +35,11 @@ func TestTryScheduleHappyPath(t *testing.T) {
 	mockStatusProvider.On("GetNextToSchedule", uninitializedSuite).Return(&givenTr).Once()
 	mockStatusProvider.On("MarkAsScheduled", uninitializedSuite.Status, "test-name", "test-namespace", mock.Anything).Return(scheduledSuite.Status, nil)
 
-	fakeCli, err := getFakeClient(&givenTd)
+	fakeCli, sch, err := getFakeClient(&givenTd)
 	require.NoError(t, err)
 	wrappedWriter := podWriterExtended{cli: fakeCli}
 
-	sut := scheduler.NewService(mockStatusProvider, fakeCli, &wrappedWriter)
+	sut := scheduler.NewService(mockStatusProvider, fakeCli, &wrappedWriter, sch)
 
 	// WHEN
 	pod, status, err := sut.TrySchedule(uninitializedSuite)
@@ -63,17 +63,21 @@ func TestTryScheduleHappyPath(t *testing.T) {
 	assert.Equal(t, "test-all", labelSuiteName)
 	labelsTestName := pod.Labels[v1alpha1.LabelKeyTestDefName]
 	assert.Equal(t, "test-name", labelsTestName)
+	require.Len(t, pod.OwnerReferences, 1)
+	require.NotNil(t, pod.OwnerReferences[0].Controller)
+	assert.True(t, *pod.OwnerReferences[0].Controller)
+	assert.Equal(t, "test-all", pod.OwnerReferences[0].Name)
 
 }
 
 func TestTryScheduleNoMoreTests(t *testing.T) {
 	// GIVEN
-	fakeCli, err := getFakeClient()
+	fakeCli, scheme, err := getFakeClient()
 	require.NoError(t, err)
 	mockStatusProvider := &automock.StatusProvider{}
 	defer mockStatusProvider.AssertExpectations(t)
 	mockStatusProvider.On("GetNextToSchedule", mock.Anything).Return(nil)
-	sut := scheduler.NewService(mockStatusProvider, fakeCli, fakeCli)
+	sut := scheduler.NewService(mockStatusProvider, fakeCli, fakeCli, scheme)
 	// WHEN
 	actualPod, actualStatus, err := sut.TrySchedule(givenUninitializedSuite(givenTestResult()))
 	// THEN
@@ -100,14 +104,14 @@ func TestTryScheduleErrorOnUpdatingStatus(t *testing.T) {
 }
 
 // fake clients which supports Occtopus CRDs
-func getFakeClient(initObjects ...runtime.Object) (client.Client, error) {
+func getFakeClient(initObjects ...runtime.Object) (client.Client, *runtime.Scheme, error) {
 	sch := scheme.Scheme
 	if err := v1alpha1.SchemeBuilder.AddToScheme(sch); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	fakeCli := fake.NewFakeClientWithScheme(sch, initObjects...)
-	return fakeCli, nil
+	return fakeCli, sch, nil
 }
 
 func givenTestResult() v1alpha1.TestResult {

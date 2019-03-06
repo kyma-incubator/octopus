@@ -2,13 +2,13 @@ package scheduler
 
 import (
 	"context"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
@@ -21,11 +21,12 @@ type StatusProvider interface {
 	MarkAsScheduled(status v1alpha1.TestSuiteStatus, testName, testNs, podName string) (v1alpha1.TestSuiteStatus, error)
 }
 
-func NewService(statusProvider StatusProvider, reader client.Reader, writer client.Writer) *Service {
+func NewService(statusProvider StatusProvider, reader client.Reader, writer client.Writer, scheme *runtime.Scheme) *Service {
 	return &Service{
 		statusProvider: statusProvider,
 		reader:         reader,
 		writer:         writer,
+		scheme:         scheme,
 	}
 }
 
@@ -33,6 +34,7 @@ type Service struct {
 	statusProvider StatusProvider
 	reader         client.Reader
 	writer         client.Writer
+	scheme         *runtime.Scheme
 }
 
 func (s *Service) TrySchedule(suite v1alpha1.ClusterTestSuite) (*v1.Pod, *v1alpha1.TestSuiteStatus, error) {
@@ -83,7 +85,9 @@ func (s *Service) startPod(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDef
 	p.Labels[v1alpha1.LabelKeyCreatedByOctopus] = "true"
 	p.Spec.RestartPolicy = v1.RestartPolicyNever
 
-	p.SetOwnerReferences([]v12.OwnerReference{{}})
+	if err := controllerutil.SetControllerReference(&suite, p, s.scheme); err != nil {
+		return nil, errors.Wrapf(err, "while setting controller reference, suite [%s], pod [name %s, namespace: %s]", suite.Name, p.Name, p.Namespace)
+	}
 
 	err := s.writer.Create(context.TODO(), p)
 	if err != nil {

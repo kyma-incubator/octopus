@@ -30,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -47,7 +46,7 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	statusSvc := status.NewService(time.Now)
-	schedulerSvc := scheduler.NewService(statusSvc, mgr.GetClient(), mgr.GetClient())
+	schedulerSvc := scheduler.NewService(statusSvc, mgr.GetClient(), mgr.GetClient(), mgr.GetScheme())
 	podSvc := fetcher.NewForTestingPod(mgr.GetClient())
 	return &ReconcileTestSuite{
 		Client:            mgr.GetClient(),
@@ -161,9 +160,6 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 	if pod != nil {
 		logSuite.Info("Testing pod created", "podName", pod.Name, "podNs", pod.Namespace)
-		if err := controllerutil.SetControllerReference(suiteCopy, pod, r.scheme); err != nil {
-			return reconcile.Result{}, errors.Wrapf(err, "while setting controller reference, suite [%s], pod [name %s, namespace: %s]", suiteCopy.Name, pod.Name, pod.Namespace)
-		}
 		suiteCopy.Status = *updatedStatus
 	}
 
