@@ -21,8 +21,8 @@ install: manifests
 	kubectl apply -f config/crds
 	kubectl apply -f config/samples
 
-.PHONY: cleanup
-cleanup:
+.PHONY: uninstall
+uninstall:
 	kubectl delete pods -l testing.kyma-project.io/created-by-octopus=true
 	kubectl delete -f config/samples
 
