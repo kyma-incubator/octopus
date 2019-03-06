@@ -19,5 +19,4 @@ limitations under the License.
 // +k8s:conversion-gen=github.com/kyma-incubator/octopus/pkg/apis/testing
 // +k8s:defaulter-gen=TypeMeta
 // +groupName=testing.kyma-project.io
-// +k8s:client-gen=fake-clientset
 package v1alpha1

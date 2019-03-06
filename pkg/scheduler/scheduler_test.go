@@ -3,8 +3,9 @@ package scheduler_test
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
-	"github.com/kyma-incubator/octopus/pkg/consts"
 	"github.com/kyma-incubator/octopus/pkg/scheduler"
 	"github.com/kyma-incubator/octopus/pkg/scheduler/automock"
 	"github.com/pkg/errors"
@@ -17,7 +18,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func TestTryScheduleHappyPath(t *testing.T) {
@@ -32,7 +32,7 @@ func TestTryScheduleHappyPath(t *testing.T) {
 
 	mockStatusProvider := &automock.StatusProvider{}
 	defer mockStatusProvider.AssertExpectations(t)
-	mockStatusProvider.On("GetNextToSchedule", uninitializedSuite).Return(&givenTr, nil).Once()
+	mockStatusProvider.On("GetNextToSchedule", uninitializedSuite).Return(&givenTr).Once()
 	mockStatusProvider.On("MarkAsScheduled", uninitializedSuite.Status, "test-name", "test-namespace", mock.Anything).Return(scheduledSuite.Status, nil)
 
 	fakeCli, err := getFakeClient(&givenTd)
@@ -57,11 +57,11 @@ func TestTryScheduleHappyPath(t *testing.T) {
 	assert.Len(t, pod.Spec.Containers, 1)
 	assert.Equal(t, "alpine", pod.Spec.Containers[0].Image)
 	assert.Equal(t, v12.RestartPolicyNever, pod.Spec.RestartPolicy)
-	labelCreatedByOctopus := pod.Labels[consts.LabelKeyCreatedByOctopus]
+	labelCreatedByOctopus := pod.Labels[v1alpha1.LabelKeyCreatedByOctopus]
 	assert.Equal(t, "true", labelCreatedByOctopus)
-	labelSuiteName := pod.Labels[consts.LabelKeySuiteName]
+	labelSuiteName := pod.Labels[v1alpha1.LabelKeySuiteName]
 	assert.Equal(t, "test-all", labelSuiteName)
-	labelsTestName := pod.Labels[consts.LabelKeyTestDefName]
+	labelsTestName := pod.Labels[v1alpha1.LabelKeyTestDefName]
 	assert.Equal(t, "test-name", labelsTestName)
 
 }
@@ -72,7 +72,7 @@ func TestTryScheduleNoMoreTests(t *testing.T) {
 	require.NoError(t, err)
 	mockStatusProvider := &automock.StatusProvider{}
 	defer mockStatusProvider.AssertExpectations(t)
-	mockStatusProvider.On("GetNextToSchedule", mock.Anything).Return(nil, nil)
+	mockStatusProvider.On("GetNextToSchedule", mock.Anything).Return(nil)
 	sut := scheduler.NewService(mockStatusProvider, fakeCli, fakeCli)
 	// WHEN
 	actualPod, actualStatus, err := sut.TrySchedule(givenUninitializedSuite(givenTestResult()))
@@ -84,19 +84,19 @@ func TestTryScheduleNoMoreTests(t *testing.T) {
 }
 
 func TestTryScheduleErrorOnGettingNextTest(t *testing.T) {
-	//TODO later
+	//TODO(aszecowka) https://github.com/kyma-incubator/octopus/issues/9
 }
 
 func TestTryScheduleErrorOnGettingTestDef(t *testing.T) {
-	//TODO later
+	//TODO(aszecowka) https://github.com/kyma-incubator/octopus/issues/9
 }
 
 func TestTryScheduleErrorOnSchedulingPod(t *testing.T) {
-	//TODO later
+	//TODO(aszecowka) https://github.com/kyma-incubator/octopus/issues/9
 }
 
 func TestTryScheduleErrorOnUpdatingStatus(t *testing.T) {
-	//TODO later
+	//TODO(aszecowka) https://github.com/kyma-incubator/octopus/issues/9
 }
 
 // fake clients which supports Occtopus CRDs

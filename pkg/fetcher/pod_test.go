@@ -1,11 +1,14 @@
-package reporter_test
+package fetcher_test
 
 import (
+	"context"
 	"fmt"
+	"github.com/kyma-incubator/octopus/pkg/scheduler"
+	"testing"
+
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
-	"github.com/kyma-incubator/octopus/pkg/consts"
-	"github.com/kyma-incubator/octopus/pkg/reporter"
-	"github.com/kyma-incubator/octopus/pkg/reporter/automock"
+	"github.com/kyma-incubator/octopus/pkg/fetcher"
+	"github.com/kyma-incubator/octopus/pkg/fetcher/automock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -14,18 +17,17 @@ import (
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"testing"
 )
 
 func TestGetPodsForSuite(t *testing.T) {
 	// GIVEN
 	givenPod := v1.Pod{
 		ObjectMeta: v12.ObjectMeta{
-			Name:      fmt.Sprintf("%s%d", consts.TestingPodGeneratedName, 1),
+			Name:      fmt.Sprintf("%s%d", scheduler.TestingPodGeneratedName, 1),
 			Namespace: "aaa",
 			Labels: map[string]string{
-				consts.LabelKeyCreatedByOctopus: "true",
-				consts.LabelKeySuiteName:        "test-all-suite",
+				v1alpha1.LabelKeyCreatedByOctopus: "true",
+				v1alpha1.LabelKeySuiteName:        "test-all-suite",
 			},
 		},
 	}
@@ -55,9 +57,9 @@ func TestGetPodsForSuite(t *testing.T) {
 				podList.Items = []v1.Pod{givenPod}
 			}
 		})
-	sut := reporter.NewService(mockReader)
+	sut := fetcher.NewForTestingPod(mockReader)
 	// WHEN
-	actualPods, err := sut.GetPodsForSuite(givenSuite)
+	actualPods, err := sut.GetPodsForSuite(context.TODO(), givenSuite)
 	// THEN
 	require.NoError(t, err)
 	require.Len(t, actualPods, 1)
@@ -73,9 +75,9 @@ func TestGetPodsForSuiteOnError(t *testing.T) {
 	mockReader := &automock.Reader{}
 	mockReader.On("List", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("some error"))
 	defer mockReader.AssertExpectations(t)
-	sut := reporter.NewService(mockReader)
+	sut := fetcher.NewForTestingPod(mockReader)
 	// WHEN
-	_, err := sut.GetPodsForSuite(givenSuite)
+	_, err := sut.GetPodsForSuite(context.TODO(), givenSuite)
 	// THEN
 	require.EqualError(t, err, "while getting pods for suite [test-all-suite]: some error")
 }

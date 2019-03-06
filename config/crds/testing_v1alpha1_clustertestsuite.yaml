@@ -91,8 +91,6 @@ spec:
                 required:
                 - type
                 - status
-                - reason
-                - message
                 type: object
               type: array
             results:
@@ -102,11 +100,11 @@ spec:
                     items:
                       properties:
                         id:
+                          description: ID is equivalent to a testing Pod name
                           type: string
                         message:
                           type: string
                         podPhase:
-                          description: ID is equivalent to a testing Pod name
                           type: string
                         reason:
                           type: string

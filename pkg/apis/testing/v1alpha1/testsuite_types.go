@@ -30,7 +30,7 @@ const (
 	StatusUnknown Status = "Unknown"
 
 	// SuiteUninitialized is when suite has not yet determined tests to run
-	// TODO later set it as a default values/initialized value
+	// TODO(aszecowka) set it as a default values/initialized value (https://github.com/kyma-incubator/octopus/issues/11)
 	SuiteUninitialized TestSuiteConditionType = "Uninitialized"
 	// When tests are running
 	SuiteRunning TestSuiteConditionType = "Running"
@@ -47,7 +47,7 @@ const (
 	// Test is not yet scheduled
 	TestNotYetScheduled TestStatus = "NotYetScheduled"
 	// Test is running
-	TestScheduled TestStatus = "Scheduled" // TODO later do we need both of them?
+	TestScheduled TestStatus = "Scheduled" // TODO(aszecowka)(later) do we need both of them?
 	TestRunning   TestStatus = "Running"
 	TestUnknown   TestStatus = "Unknown"
 	TestFailed    TestStatus = "Failed"
@@ -128,8 +128,8 @@ type TestSuiteStatus struct {
 type TestSuiteCondition struct {
 	Type    TestSuiteConditionType `json:"type"`
 	Status  Status                 `json:"status"`
-	Reason  string                 `json:"reason"`
-	Message string                 `json:"message"`
+	Reason  string                 `json:"reason,omitempty"`
+	Message string                 `json:"message,omitempty"`
 }
 
 // TestResult gathers all executions for given TestDefinition
@@ -143,7 +143,8 @@ type TestResult struct {
 
 // TestExecution provides status for given test execution
 type TestExecution struct {
-	ID             string       `json:"id"` // ID is equivalent to a testing Pod name
+	// ID is equivalent to a testing Pod name
+	ID             string       `json:"id"`
 	PodPhase       v1.PodPhase  `json:"podPhase"`
 	StartTime      *metav1.Time `json:"startTime,inline,omitempty"`
 	CompletionTime *metav1.Time `json:"completionTime,inline,omitempty"`

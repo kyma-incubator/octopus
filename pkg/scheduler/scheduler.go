@@ -2,17 +2,22 @@ package scheduler
 
 import (
 	"context"
+	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
-	"github.com/kyma-incubator/octopus/pkg/consts"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-//go:generate mockery -name=StatusProvider -output=automock -outpkg=automock -case=underscore
+const (
+	TestingPodGeneratedName = "octopus-testing-pod-"
+)
+
+//go:generate go run ./../../vendor/github.com/vektra/mockery/cmd/mockery/mockery.go -name=StatusProvider -output=automock -outpkg=automock -case=underscore
 type StatusProvider interface {
-	GetNextToSchedule(suite v1alpha1.ClusterTestSuite) (*v1alpha1.TestResult, error)
+	GetNextToSchedule(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult
 	MarkAsScheduled(status v1alpha1.TestSuiteStatus, testName, testNs, podName string) (v1alpha1.TestSuiteStatus, error)
 }
 
@@ -31,10 +36,7 @@ type Service struct {
 }
 
 func (s *Service) TrySchedule(suite v1alpha1.ClusterTestSuite) (*v1.Pod, *v1alpha1.TestSuiteStatus, error) {
-	tr, err := s.statusProvider.GetNextToSchedule(suite)
-	if err != nil {
-		return nil, nil, err
-	}
+	tr := s.statusProvider.GetNextToSchedule(suite)
 	if tr == nil {
 		return nil, nil, nil
 	}
@@ -49,7 +51,7 @@ func (s *Service) TrySchedule(suite v1alpha1.ClusterTestSuite) (*v1.Pod, *v1alph
 
 	curr, err := s.statusProvider.MarkAsScheduled(suite.Status, tr.Name, tr.Namespace, pod.Name)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrapf(err, "while scheduling suite [%s]", suite.Name)
 	}
 	return pod, &curr, nil
 }
@@ -58,7 +60,7 @@ func (s *Service) getDefinition(name, ns string) (v1alpha1.TestDefinition, error
 	var out v1alpha1.TestDefinition
 	err := s.reader.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: ns}, &out)
 	if err != nil {
-		return v1alpha1.TestDefinition{}, errors.Wrapf(err, "while getting test definition [name: %s, namespace: %s]", name, ns)
+		return v1alpha1.TestDefinition{}, errors.Wrapf(err, "while getting test fetcher [name: %s, namespace: %s]", name, ns)
 	}
 	return out, nil
 }
@@ -70,20 +72,22 @@ func (s *Service) startPod(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDef
 	p.Labels = def.Spec.Template.Labels
 	p.Annotations = def.Spec.Template.Annotations
 
-	p.GenerateName = consts.TestingPodGeneratedName
+	p.GenerateName = TestingPodGeneratedName
 	p.Namespace = def.Namespace
 
 	if p.Labels == nil {
 		p.Labels = make(map[string]string)
 	}
-	p.Labels[consts.LabelKeySuiteName] = suite.Name
-	p.Labels[consts.LabelKeyTestDefName] = def.Name
-	p.Labels[consts.LabelKeyCreatedByOctopus] = "true"
+	p.Labels[v1alpha1.LabelKeySuiteName] = suite.Name
+	p.Labels[v1alpha1.LabelKeyTestDefName] = def.Name
+	p.Labels[v1alpha1.LabelKeyCreatedByOctopus] = "true"
 	p.Spec.RestartPolicy = v1.RestartPolicyNever
+
+	p.SetOwnerReferences([]v12.OwnerReference{{}})
 
 	err := s.writer.Create(context.TODO(), p)
 	if err != nil {
-		return nil, errors.Wrapf(err, "while creating testing pod for suite [%s] and test definition [name: %s, namespace: %s]", suite.Name, def.Name, def.Namespace)
+		return nil, errors.Wrapf(err, "while creating testing pod for suite [%s] and test fetcher [name: %s, namespace: %s]", suite.Name, def.Name, def.Namespace)
 	}
 	return p, nil
 }

@@ -214,6 +214,14 @@
   version = "v1.1.5"
 
 [[projects]]
+  digest = "1:c2009beca5bfcb4303525e981d5f7ba8cfb92742f5b641abd83f82d39ee4927e"
+  name = "github.com/kyma-project/kyma"
+  packages = ["tests/acceptance/pkg/repeat"]
+  pruneopts = "T"
+  revision = "32fcb1868eee495544cec1555c02aa7c9ef55246"
+  version = "0.7.0"
+
+[[projects]]
   digest = "1:3804a3a02964db8e6db3e5e7960ac1c1a9b12835642dd4f4ac4e56c749ec73eb"
   name = "github.com/markbates/inflect"
   packages = ["."]
@@ -447,6 +455,14 @@
   pruneopts = "T"
   revision = "ffdc059bfe9ce6a4e144ba849dbedead332c6053"
   version = "v1.3.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:6b7ecd619cb248e56c15855a8df69368d11de724d1cb09ae30f633e1890eec29"
+  name = "github.com/vektra/mockery"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "e78b021dcbb558a8e7ac1fc5bc757ad7c277bb81"
 
 [[projects]]
   digest = "1:365b8ecb35a5faf5aa0ee8d798548fc9cd4200cb95d77a5b0b285ac881bae499"
@@ -966,12 +982,14 @@
   input-imports = [
     "github.com/emicklei/go-restful",
     "github.com/go-logr/logr",
+    "github.com/kyma-project/kyma/tests/acceptance/pkg/repeat",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
     "github.com/pkg/errors",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/mock",
     "github.com/stretchr/testify/require",
+    "github.com/vektra/mockery",
     "golang.org/x/net/context",
     "k8s.io/api/core/v1",
     "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",

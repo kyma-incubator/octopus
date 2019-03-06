@@ -7,7 +7,7 @@ rules:
 - apiGroups:
   - apps
   resources:
-  - deployments
+  - pods
   verbs:
   - get
   - list
@@ -16,14 +16,6 @@ rules:
   - update
   - patch
   - delete
-- apiGroups:
-  - apps
-  resources:
-  - deployments/status
-  verbs:
-  - get
-  - update
-  - patch
 - apiGroups:
   - testing.kyma-project.io
   resources:

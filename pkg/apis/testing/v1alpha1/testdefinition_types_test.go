@@ -16,9 +16,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"testing"
 
-	"github.com/onsi/gomega"
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -34,24 +36,24 @@ func TestStorageTestDefinition(t *testing.T) {
 			Name:      "foo",
 			Namespace: "default",
 		}}
-	g := gomega.NewGomegaWithT(t)
 
 	// Test Create
 	fetched := &TestDefinition{}
-	g.Expect(c.Create(context.TODO(), created)).NotTo(gomega.HaveOccurred())
+	require.NoError(t, c.Create(context.TODO(), created))
 
-	g.Expect(c.Get(context.TODO(), key, fetched)).NotTo(gomega.HaveOccurred())
-	g.Expect(fetched).To(gomega.Equal(created))
+	require.NoError(t, c.Get(context.TODO(), key, fetched))
+	assert.Equal(t, created, fetched)
 
 	// Test Updating the Labels
 	updated := fetched.DeepCopy()
 	updated.Labels = map[string]string{"hello": "world"}
-	g.Expect(c.Update(context.TODO(), updated)).NotTo(gomega.HaveOccurred())
+	require.NoError(t, c.Update(context.TODO(), updated))
 
-	g.Expect(c.Get(context.TODO(), key, fetched)).NotTo(gomega.HaveOccurred())
-	g.Expect(fetched).To(gomega.Equal(updated))
+	require.NoError(t, c.Get(context.TODO(), key, fetched))
+	assert.Equal(t, updated, fetched)
 
 	// Test Delete
-	g.Expect(c.Delete(context.TODO(), fetched)).NotTo(gomega.HaveOccurred())
-	g.Expect(c.Get(context.TODO(), key, fetched)).To(gomega.HaveOccurred())
+	require.NoError(t, c.Delete(context.TODO(), fetched))
+	err := c.Get(context.TODO(), key, fetched)
+	assert.True(t, errors.IsNotFound(err))
 }

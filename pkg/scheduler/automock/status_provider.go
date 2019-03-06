@@ -12,7 +12,7 @@ type StatusProvider struct {
 }
 
 // GetNextToSchedule provides a mock function with given fields: suite
-func (_m *StatusProvider) GetNextToSchedule(suite v1alpha1.ClusterTestSuite) (*v1alpha1.TestResult, error) {
+func (_m *StatusProvider) GetNextToSchedule(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult {
 	ret := _m.Called(suite)
 
 	var r0 *v1alpha1.TestResult
@@ -24,14 +24,7 @@ func (_m *StatusProvider) GetNextToSchedule(suite v1alpha1.ClusterTestSuite) (*v
 		}
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func(v1alpha1.ClusterTestSuite) error); ok {
-		r1 = rf(suite)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }
 
 // MarkAsScheduled provides a mock function with given fields: status, testName, testNs, podName

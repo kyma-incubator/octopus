@@ -16,19 +16,21 @@ limitations under the License.
 package testsuite
 
 import (
-	"github.com/go-logr/logr"
+	"fmt"
 	"github.com/pkg/errors"
+	"testing"
+	"time"
+
+	"github.com/go-logr/logr"
+	"github.com/kyma-project/kyma/tests/acceptance/pkg/repeat"
 	"github.com/stretchr/testify/require"
 	"k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	"testing"
-	"time"
 
 	testingv1alpha1 "github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
-	"github.com/onsi/gomega"
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -37,14 +39,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-var c client.Client
+const succeededSuiteTimeout = time.Second * 5
 
-const timeout = time.Second * 5
-
-func TestReconcile(t *testing.T) {
+func TestReconcileClusterTestSuite(t *testing.T) {
+	// GIVEN
+	ctx := context.Background()
 	logf.SetLogger(logf.ZapLogger(false))
 
-	g := gomega.NewGomegaWithT(t)
 	testDef := &testingv1alpha1.TestDefinition{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-ls-command", Namespace: "default"},
 		Spec: testingv1alpha1.TestDefinitionSpec{
@@ -63,63 +64,55 @@ func TestReconcile(t *testing.T) {
 	}
 	suite := &testingv1alpha1.ClusterTestSuite{ObjectMeta: metav1.ObjectMeta{Name: "suite-test-ls-command"}}
 
-	// Setup the Manager and Controller.  Wrap the Controller Reconcile function so it writes each request to a
-	// channel when it is finished.
+	// Setup the Manager and Controller
 	mgr, err := manager.New(cfg, manager.Options{})
-	g.Expect(err).NotTo(gomega.HaveOccurred())
-	c = mgr.GetClient()
+	require.NoError(t, err)
+	c := mgr.GetClient()
 
-	recFn, requests := SetupTestReconcile(newReconciler(mgr))
-	g.Expect(add(mgr, recFn)).NotTo(gomega.HaveOccurred())
-
-	stopMgr, mgrStopped := StartTestManager(mgr, g)
+	require.NoError(t, add(mgr, newReconciler(mgr)))
+	stopMgr, mgrStopped := StartTestManager(t, mgr)
 
 	defer func() {
 		close(stopMgr)
 		mgrStopped.Wait()
 	}()
 
-	// Create the TestDefinition
-	err = c.Create(context.TODO(), testDef)
-	g.Expect(err).NotTo(gomega.HaveOccurred())
-	defer c.Delete(context.TODO(), testDef)
-
-	// Create the ClusterTestSuite object and expect the Reconcile
-	err = c.Create(context.TODO(), suite)
-	g.Expect(err).NotTo(gomega.HaveOccurred())
-	defer c.Delete(context.TODO(), suite)
-
 	err = startMockPodController(mgr)
 	require.NoError(t, err)
 
-	go func() {
-		for {
-			// I don't care how many requests will be sent to my Reconciler, but I have to read all of them to not block
-			log.Info("Got reconcile request", "req", <-requests)
-		}
-	}()
+	// WHEN
+	// Create the TestDefinition
+	err = c.Create(ctx, testDef)
+	require.NoError(t, err)
+	defer c.Delete(ctx, testDef)
 
-	g.Eventually(func() error {
+	// Create the ClusterTestSuite object and expect the Reconcile
+	err = c.Create(ctx, suite)
+	require.NoError(t, err)
+	defer c.Delete(ctx, suite)
+
+	// THEN
+	repeat.FuncAtMost(t, func() error {
 		var actualSuite testingv1alpha1.ClusterTestSuite
-		err := c.Get(context.TODO(), types.NamespacedName{Name: "suite-test-ls-command"}, &actualSuite)
+		err := c.Get(ctx, types.NamespacedName{Name: "suite-test-ls-command"}, &actualSuite)
 		if err != nil {
 			return err
 		}
-		if len(actualSuite.Status.Conditions) != 2 {
-			return errors.New("Should have 2 conditions")
+		succeeded := false
+		for _, cond := range actualSuite.Status.Conditions {
+			if cond.Type == testingv1alpha1.SuiteSucceeded && cond.Status == testingv1alpha1.StatusTrue {
+				succeeded = true
+			} else if cond.Status == testingv1alpha1.StatusTrue {
+				return fmt.Errorf("suite is in invalid state [%s]", cond.Type)
+			}
 		}
-		suiteRunning := actualSuite.Status.Conditions[0].Type == testingv1alpha1.SuiteRunning && actualSuite.Status.Conditions[0].Status == testingv1alpha1.StatusTrue
-		if suiteRunning {
-			return errors.New("suite should not be running")
-		}
-		suiteSucceeded := actualSuite.Status.Conditions[1].Type == testingv1alpha1.SuiteSucceeded && actualSuite.Status.Conditions[1].Status == testingv1alpha1.StatusTrue
-		if !suiteSucceeded {
+
+		if !succeeded {
 			return errors.New("suite should be succeeded")
 		}
 
 		return nil
-	}, timeout).
-		Should(gomega.Succeed())
+	}, succeededSuiteTimeout)
 
 }
 
@@ -130,16 +123,17 @@ type mockPodReconciler struct {
 
 func (r *mockPodReconciler) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	pod := &v1.Pod{}
-	err := r.cli.Get(context.TODO(), request.NamespacedName, pod)
+	ctx := context.Background()
+	err := r.cli.Get(ctx, request.NamespacedName, pod)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	log.WithName("mock pod controller").Info("got pod", "podName", pod.Name, "podPhase", pod.Status.Phase)
+	r.getLogger().Info("got pod", "podName", pod.Name, "podPhase", pod.Status.Phase)
 	pod = pod.DeepCopy()
 	if pod.Status.Phase == v1.PodPending {
 		pod.Status.Phase = v1.PodRunning
 		r.getLogger().Info("starting pod", "podName", pod.Name)
-		err := r.cli.Status().Update(context.TODO(), pod)
+		err := r.cli.Status().Update(ctx, pod)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -148,7 +142,7 @@ func (r *mockPodReconciler) Reconcile(request reconcile.Request) (reconcile.Resu
 	if pod.Status.Phase == v1.PodRunning {
 		pod.Status.Phase = v1.PodSucceeded
 		r.getLogger().Info("pod succeeded", "podName", pod.Name)
-		err := r.cli.Status().Update(context.TODO(), pod)
+		err := r.cli.Status().Update(ctx, pod)
 		if err != nil {
 			return reconcile.Result{}, err
 		}

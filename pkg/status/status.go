@@ -2,11 +2,11 @@ package status
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
-	"github.com/kyma-incubator/octopus/pkg/consts"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
 )
 
 type NowProvider func() time.Time
@@ -22,14 +22,14 @@ func NewService(nowProvider NowProvider) *Service {
 func (s *Service) EnsureStatusIsUpToDate(suite v1alpha1.ClusterTestSuite, pods []v1.Pod) (*v1alpha1.TestSuiteStatus, error) {
 	out := suite.Status.DeepCopy()
 	for _, pod := range pods {
-		for resultID, tr := range out.Results {
-			if tr.Name == pod.Labels[consts.LabelKeyTestDefName] && tr.Namespace == pod.Namespace {
+		for idx, tr := range out.Results {
+			if tr.Name == pod.Labels[v1alpha1.LabelKeyTestDefName] && tr.Namespace == pod.Namespace {
 				// find execution
 				for execID, exec := range tr.Executions {
 					if exec.ID == pod.Name {
 						prev := exec.PodPhase
 						if pod.Status.Phase != prev {
-							out.Results[resultID].Executions[execID] = s.adjustTestExec(exec, pod)
+							out.Results[idx].Executions[execID] = s.adjustTestExec(exec, pod)
 						}
 					}
 				}
@@ -45,7 +45,6 @@ func (s *Service) EnsureStatusIsUpToDate(suite v1alpha1.ClusterTestSuite, pods [
 	}
 	adjusted := s.adjustSuiteCondition(*out)
 	out = &adjusted
-	// TODO later what to do with incosistencies?
 	return out, nil
 }
 
@@ -101,7 +100,7 @@ func (s *Service) calculateTestStatus(tr v1alpha1.TestResult) v1alpha1.TestStatu
 func (s *Service) adjustSuiteCondition(stat v1alpha1.TestSuiteStatus) v1alpha1.TestSuiteStatus {
 	prevCond := s.getSuiteCondition(stat)
 
-	// TODO later anySkipped,
+	// TODO(aszecowka)(later) anySkipped, https://github.com/kyma-incubator/octopus/issues/10
 	var anyNotScheduled, anyScheduled, anyRunning, anyUnknown, anyFailed bool
 	var newCond v1alpha1.TestSuiteConditionType
 	for _, res := range stat.Results {
@@ -127,7 +126,7 @@ func (s *Service) adjustSuiteCondition(stat v1alpha1.TestSuiteStatus) v1alpha1.T
 	} else if anyFailed {
 		newCond = v1alpha1.SuiteFailed
 	} else if anyUnknown {
-		newCond = v1alpha1.SuiteError //TODO later
+		newCond = v1alpha1.SuiteError //TODO(aszecowka) later, should it be a error?
 	} else {
 		newCond = v1alpha1.SuiteSucceeded
 	}
@@ -205,12 +204,7 @@ func (s *Service) IsUninitialized(suite v1alpha1.ClusterTestSuite) bool {
 		return true
 	}
 
-	for _, cond := range suite.Status.Conditions {
-		if cond.Type == v1alpha1.SuiteUninitialized && cond.Status == v1alpha1.StatusTrue {
-			return true
-		}
-	}
-	return false
+	return s.isConditionSet(suite.Status, v1alpha1.SuiteUninitialized)
 }
 
 func (s *Service) IsFinished(suite v1alpha1.ClusterTestSuite) bool {
@@ -237,14 +231,14 @@ func (s *Service) getSuiteCondition(stat v1alpha1.TestSuiteStatus) v1alpha1.Test
 	return v1alpha1.SuiteUninitialized
 }
 
-func (s *Service) GetNextToSchedule(suite v1alpha1.ClusterTestSuite) (*v1alpha1.TestResult, error) {
-	// TODO later no count, no retries
+func (s *Service) GetNextToSchedule(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult {
+	// TODO(aszecowka) https://github.com/kyma-incubator/octopus/issues/9 and https://github.com/kyma-incubator/octopus/issues/8
 	for _, tr := range suite.Status.Results {
 		if len(tr.Executions) == 0 {
-			return &tr, nil
+			return &tr
 		}
 	}
-	return nil, nil
+	return nil
 
 }
 
