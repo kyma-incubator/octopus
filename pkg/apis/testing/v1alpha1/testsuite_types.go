@@ -16,12 +16,13 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type TestSuiteConditionType string
 type Status string
-type TestExecutionStatus string
+type TestStatus string
 
 const (
 	StatusTrue    Status = "True"
@@ -29,6 +30,7 @@ const (
 	StatusUnknown Status = "Unknown"
 
 	// SuiteUninitialized is when suite has not yet determined tests to run
+	// TODO(aszecowka) set it as a default values/initialized value (https://github.com/kyma-incubator/octopus/issues/11)
 	SuiteUninitialized TestSuiteConditionType = "Uninitialized"
 	// When tests are running
 	SuiteRunning TestSuiteConditionType = "Running"
@@ -37,16 +39,20 @@ const (
 	// When suite is finished and there were failing tests
 	SuiteFailed TestSuiteConditionType = "Failed"
 	// When all tests passed
-	SuiteSucceed TestSuiteConditionType = "Succeed"
+	SuiteSucceeded TestSuiteConditionType = "Succeeded"
 
+	// TestStatus represents status of a given test (test-kubeless) , not a test execution, because we can have many
+	// executions of the same tests (in case of MaxRetries>0 or Count>1)
+	//
 	// Test is not yet scheduled
-	TestNotYetScheduled TestExecutionStatus = "NotYetScheduled"
+	TestNotYetScheduled TestStatus = "NotYetScheduled"
 	// Test is running
-	TestRunning TestExecutionStatus = "Running"
-	TestError   TestExecutionStatus = "Error"
-	TestFailed  TestExecutionStatus = "Failed"
-	TestSucceed TestExecutionStatus = "Succeed"
-	TestSkipped TestExecutionStatus = "Skipped"
+	TestScheduled TestStatus = "Scheduled" // TODO(aszecowka)(later) do we need both of them?
+	TestRunning   TestStatus = "Running"
+	TestUnknown   TestStatus = "Unknown"
+	TestFailed    TestStatus = "Failed"
+	TestSucceeded TestStatus = "Succeeded"
+	TestSkipped   TestStatus = "Skipped"
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -122,8 +128,8 @@ type TestSuiteStatus struct {
 type TestSuiteCondition struct {
 	Type    TestSuiteConditionType `json:"type"`
 	Status  Status                 `json:"status"`
-	Reason  string                 `json:"reason"`
-	Message string                 `json:"message"`
+	Reason  string                 `json:"reason,omitempty"`
+	Message string                 `json:"message,omitempty"`
 }
 
 // TestResult gathers all executions for given TestDefinition
@@ -131,17 +137,19 @@ type TestResult struct {
 	// Test name
 	Name       string          `json:"name"`
 	Namespace  string          `json:"namespace"`
+	Status     TestStatus      `json:"status"`
 	Executions []TestExecution `json:"executions"`
 }
 
 // TestExecution provides status for given test execution
 type TestExecution struct {
-	ID             string              `json:"id"` // ID is equivalent to a testing Pod name
-	Status         TestExecutionStatus `json:"status"`
-	StartTime      *metav1.Time        `json:"startTime,inline,omitempty"`
-	CompletionTime *metav1.Time        `json:"completionTime,inline,omitempty"`
-	Reason         string              `json:"reason"`
-	Message        string              `json:"message"`
+	// ID is equivalent to a testing Pod name
+	ID             string       `json:"id"`
+	PodPhase       v1.PodPhase  `json:"podPhase"`
+	StartTime      *metav1.Time `json:"startTime,inline,omitempty"`
+	CompletionTime *metav1.Time `json:"completionTime,inline,omitempty"`
+	Reason         string       `json:"reason,omitempty"`
+	Message        string       `json:"message,omitempty"`
 }
 
 func init() {

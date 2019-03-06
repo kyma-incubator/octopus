@@ -16,14 +16,23 @@ limitations under the License.
 package testsuite
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
+
+	"github.com/go-logr/logr"
+	"github.com/kyma-project/kyma/tests/acceptance/pkg/repeat"
+	"github.com/stretchr/testify/require"
+	"k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+
 	testingv1alpha1 "github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
-	"github.com/onsi/gomega"
 	"golang.org/x/net/context"
-	appsv1 "k8s.io/api/apps/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -31,56 +40,135 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-var c client.Client
+const succeededSuiteTimeout = time.Second * 5
 
-var expectedRequest = reconcile.Request{NamespacedName: types.NamespacedName{Name: "foo"}}
-var depKey = types.NamespacedName{Name: "foo-deployment", Namespace: "default"}
+func TestReconcileClusterTestSuite(t *testing.T) {
+	// GIVEN
+	ctx := context.Background()
+	logf.SetLogger(logf.ZapLogger(false))
 
-const timeout = time.Second * 5
+	testDef := &testingv1alpha1.TestDefinition{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-ls-command", Namespace: "default"},
+		Spec: testingv1alpha1.TestDefinitionSpec{
+			Template: v1.PodTemplateSpec{
 
-func TestReconcile(t *testing.T) {
-	g := gomega.NewGomegaWithT(t)
-	instance := &testingv1alpha1.ClusterTestSuite{ObjectMeta: metav1.ObjectMeta{Name: "foo"}}
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:    "test",
+							Image:   "alpine:3.9",
+							Command: []string{"ls"}},
+					},
+				},
+			},
+		},
+	}
+	suite := &testingv1alpha1.ClusterTestSuite{ObjectMeta: metav1.ObjectMeta{Name: "suite-test-ls-command"}}
 
-	// Setup the Manager and Controller.  Wrap the Controller Reconcile function so it writes each request to a
-	// channel when it is finished.
+	// Setup the Manager and Controller
 	mgr, err := manager.New(cfg, manager.Options{})
-	g.Expect(err).NotTo(gomega.HaveOccurred())
-	c = mgr.GetClient()
+	require.NoError(t, err)
+	c := mgr.GetClient()
 
-	recFn, requests := SetupTestReconcile(newReconciler(mgr))
-	g.Expect(add(mgr, recFn)).NotTo(gomega.HaveOccurred())
-
-	stopMgr, mgrStopped := StartTestManager(mgr, g)
+	require.NoError(t, add(mgr, newReconciler(mgr)))
+	stopMgr, mgrStopped := StartTestManager(t, mgr)
 
 	defer func() {
 		close(stopMgr)
 		mgrStopped.Wait()
 	}()
 
-	// Create the ClusterTestSuite object and expect the Reconcile and Deployment to be created
-	err = c.Create(context.TODO(), instance)
-	// The instance object may not be a valid object because it might be missing some required fields.
-	// Please modify the instance object by adding required fields and then remove the following if statement.
-	if apierrors.IsInvalid(err) {
-		t.Logf("failed to create object, got an invalid object error: %v", err)
-		return
+	err = startMockPodController(mgr)
+	require.NoError(t, err)
+
+	// WHEN
+	// Create the TestDefinition
+	err = c.Create(ctx, testDef)
+	require.NoError(t, err)
+	defer c.Delete(ctx, testDef)
+
+	// Create the ClusterTestSuite object and expect the Reconcile
+	err = c.Create(ctx, suite)
+	require.NoError(t, err)
+	defer c.Delete(ctx, suite)
+
+	// THEN
+	repeat.FuncAtMost(t, func() error {
+		var actualSuite testingv1alpha1.ClusterTestSuite
+		err := c.Get(ctx, types.NamespacedName{Name: "suite-test-ls-command"}, &actualSuite)
+		if err != nil {
+			return err
+		}
+		succeeded := false
+		for _, cond := range actualSuite.Status.Conditions {
+			if cond.Type == testingv1alpha1.SuiteSucceeded && cond.Status == testingv1alpha1.StatusTrue {
+				succeeded = true
+			} else if cond.Status == testingv1alpha1.StatusTrue {
+				return fmt.Errorf("suite is in invalid state [%s]", cond.Type)
+			}
+		}
+
+		if !succeeded {
+			return errors.New("suite should be succeeded")
+		}
+
+		return nil
+	}, succeededSuiteTimeout)
+
+}
+
+// We need to manually change status of Pod
+type mockPodReconciler struct {
+	cli client.Client
+}
+
+func (r *mockPodReconciler) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	pod := &v1.Pod{}
+	ctx := context.Background()
+	err := r.cli.Get(ctx, request.NamespacedName, pod)
+	if err != nil {
+		return reconcile.Result{}, err
 	}
-	g.Expect(err).NotTo(gomega.HaveOccurred())
-	defer c.Delete(context.TODO(), instance)
-	g.Eventually(requests, timeout).Should(gomega.Receive(gomega.Equal(expectedRequest)))
+	r.getLogger().Info("got pod", "podName", pod.Name, "podPhase", pod.Status.Phase)
+	pod = pod.DeepCopy()
+	if pod.Status.Phase == v1.PodPending {
+		pod.Status.Phase = v1.PodRunning
+		r.getLogger().Info("starting pod", "podName", pod.Name)
+		err := r.cli.Status().Update(ctx, pod)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		return reconcile.Result{}, nil
+	}
+	if pod.Status.Phase == v1.PodRunning {
+		pod.Status.Phase = v1.PodSucceeded
+		r.getLogger().Info("pod succeeded", "podName", pod.Name)
+		err := r.cli.Status().Update(ctx, pod)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		return reconcile.Result{}, nil
+	}
+	return reconcile.Result{}, nil
+}
 
-	deploy := &appsv1.Deployment{}
-	g.Eventually(func() error { return c.Get(context.TODO(), depKey, deploy) }, timeout).
-		Should(gomega.Succeed())
+func (r *mockPodReconciler) getLogger() logr.Logger {
+	return logf.Log.WithName("mock pod controller")
+}
 
-	// Delete the Deployment and expect Reconcile to be called for Deployment deletion
-	g.Expect(c.Delete(context.TODO(), deploy)).NotTo(gomega.HaveOccurred())
-	g.Eventually(requests, timeout).Should(gomega.Receive(gomega.Equal(expectedRequest)))
-	g.Eventually(func() error { return c.Get(context.TODO(), depKey, deploy) }, timeout).
-		Should(gomega.Succeed())
+func startMockPodController(mgr manager.Manager) error {
+	pr := &mockPodReconciler{
+		cli: mgr.GetClient(),
+	}
+	c, err := controller.New("pod-controller", mgr, controller.Options{Reconciler: pr})
+	if err != nil {
+		return err
+	}
 
-	// Manually delete Deployment since GC isn't enabled in the test control plane
-	g.Expect(c.Delete(context.TODO(), deploy)).To(gomega.Succeed())
+	err = c.Watch(&source.Kind{Type: &v1.Pod{}}, &handler.EnqueueRequestForObject{})
+	if err != nil {
+		return err
+	}
 
+	return nil
 }

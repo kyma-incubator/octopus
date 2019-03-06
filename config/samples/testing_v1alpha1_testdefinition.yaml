@@ -12,8 +12,9 @@ spec:
   disableConcurrency: n
   timeout: 3m
   template:
-    containers:
-      - name: test
-        image: alpine:latest
-        command:
-          - "pwd"
+    spec:
+      containers:
+        - name: test
+          image: alpine:latest
+          command:
+            - "pwd"

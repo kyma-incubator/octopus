@@ -91,8 +91,6 @@ spec:
                 required:
                 - type
                 - status
-                - reason
-                - message
                 type: object
               type: array
             results:
@@ -102,19 +100,17 @@ spec:
                     items:
                       properties:
                         id:
+                          description: ID is equivalent to a testing Pod name
                           type: string
                         message:
                           type: string
-                        reason:
+                        podPhase:
                           type: string
-                        status:
-                          description: ID is equivalent to a testing Pod name
+                        reason:
                           type: string
                       required:
                       - id
-                      - status
-                      - reason
-                      - message
+                      - podPhase
                       type: object
                     type: array
                   name:
@@ -122,9 +118,12 @@ spec:
                     type: string
                   namespace:
                     type: string
+                  status:
+                    type: string
                 required:
                 - name
                 - namespace
+                - status
                 - executions
                 type: object
               type: array
