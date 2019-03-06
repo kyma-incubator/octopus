@@ -148,7 +148,6 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
-	logSuite.Info("Ensuring status is up-to-date")
 	updatedStatus, err := r.ensureStatusIsUpToDate(ctx, *suiteCopy)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "while ensuring status is up-to-date for suite [%s]", suiteCopy.Name)
