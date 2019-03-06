@@ -38,7 +38,7 @@ func (s *Service) EnsureStatusIsUpToDate(suite v1alpha1.ClusterTestSuite, pods [
 	}
 
 	for idx, res := range out.Results {
-		newState := s.calculateTestStatus(res)
+		newState := s.calculateTestStatus(res, suite.Spec.MaxRetries, suite.Spec.Count)
 		if res.Status != newState {
 			out.Results[idx].Status = newState
 		}
@@ -60,39 +60,27 @@ func (s *Service) adjustTestExec(exec v1alpha1.TestExecution, pod v1.Pod) v1alph
 	return exec
 }
 
-func (s *Service) calculateTestStatus(tr v1alpha1.TestResult) v1alpha1.TestStatus {
+func (s *Service) calculateTestStatus(tr v1alpha1.TestResult, maxRetries, count int64) v1alpha1.TestStatus {
 	if len(tr.Executions) == 0 {
 		return v1alpha1.TestNotYetScheduled
 	}
+	// TODO(aszecowka): https://github.com/kyma-incubator/octopus/issues/8
+	if len(tr.Executions) > 1 {
+		return v1alpha1.TestUnknown
+	}
 
-	var anyPending, anyRunning, anySucceeded, anyFailed, anyUnknown bool
 	for _, exec := range tr.Executions {
 		switch exec.PodPhase {
 		case v1.PodPending:
-			anyPending = true
+			return v1alpha1.TestRunning
 		case v1.PodFailed:
-			anyFailed = true
+			return v1alpha1.TestFailed
 		case v1.PodRunning:
-			anyRunning = true
+			return v1alpha1.TestRunning
 		case v1.PodSucceeded:
-			anySucceeded = true
-		case v1.PodUnknown:
-			anyUnknown = true
+			return v1alpha1.TestSucceeded
 		}
 	}
-	if anyPending || anyRunning {
-		return v1alpha1.TestRunning
-	}
-	if anyFailed {
-		return v1alpha1.TestFailed
-	}
-	if anyUnknown {
-		return v1alpha1.TestUnknown
-	}
-	if anySucceeded {
-		return v1alpha1.TestSucceeded
-	}
-
 	return v1alpha1.TestUnknown
 
 }

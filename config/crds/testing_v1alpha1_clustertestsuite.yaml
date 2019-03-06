@@ -111,8 +111,6 @@ spec:
                       required:
                       - id
                       - podPhase
-                      - reason
-                      - message
                       type: object
                     type: array
                   name:
