@@ -148,8 +148,8 @@ type TestExecution struct {
 	PodPhase       v1.PodPhase  `json:"podPhase"`
 	StartTime      *metav1.Time `json:"startTime,inline,omitempty"`
 	CompletionTime *metav1.Time `json:"completionTime,inline,omitempty"`
-	Reason         string       `json:"reason"`
-	Message        string       `json:"message"`
+	Reason         string       `json:"reason,omitempty"`
+	Message        string       `json:"message,omitempty"`
 }
 
 func init() {
