@@ -17,9 +17,10 @@ package testsuite
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"testing"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/go-logr/logr"
 	"github.com/kyma-project/kyma/tests/acceptance/pkg/repeat"

@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"

@@ -3,8 +3,9 @@ package fetcher_test
 import (
 	"context"
 	"fmt"
-	"github.com/kyma-incubator/octopus/pkg/scheduler"
 	"testing"
+
+	"github.com/kyma-incubator/octopus/pkg/scheduler"
 
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 	"github.com/kyma-incubator/octopus/pkg/fetcher"

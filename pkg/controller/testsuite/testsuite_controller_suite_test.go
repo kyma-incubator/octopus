@@ -16,12 +16,13 @@ limitations under the License.
 package testsuite
 
 import (
-	"github.com/stretchr/testify/require"
 	stdlog "log"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/kyma-incubator/octopus/pkg/apis"
 	"k8s.io/client-go/kubernetes/scheme"
