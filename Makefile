@@ -55,7 +55,7 @@ generate:
 
 # Build the docker image
 .PHONY: docker-build
-docker-build: resolve validate
+docker-build: resolve generate validate
 	docker build . -t ${IMG}
 	docker tag ${IMG} ${IMG-CI}
 	@echo "updating kustomize image patch file for manager resource"
