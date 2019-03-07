@@ -2,7 +2,7 @@
 
 ## Overview
 
-The folder contains documents that provide an insight into Octopus functionality.
+The folder contains documents that provide insight into Octopus functionality:
 
 <!-- Update the list each time you modify the document structure in this folder. -->
 

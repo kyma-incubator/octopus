@@ -1,8 +1,7 @@
 ## Tutorial
-In this tutorial, you create `TestDefinition` and `ClusterTestSuite` to show Octopus in action.
+Follow this tutorial to create `TestDefinition` and `ClusterTestSuite` CRDs and to see Octopus in action.
 
-1. Prepare data
-Create `TestDefinition` and `ClusterTestSuite`:
+1. Create `TestDefinition` and `ClusterTestSuite` CRDs:
 
 ```bash
 cd $GOPATH/src/github.com/kyma-incubator/octopus
@@ -19,14 +18,14 @@ image, so it should always succeed.
 cd $GOPATH/src/github.com/kyma-incubator/octopus
 make run
 ```
-Then you should see in the logs similar output:
+The sample output looks as follows:
 ```
 {"level":"info","ts":...,"logger":"cts_controller","msg":"Initialize suite","suite":"testsuite-all"}
 {"level":"info","ts":...,"logger":"cts_controller","msg":"Testing pod created","suite":"testsuite-all","podName":"octopus-testing-pod-jz9qq","podNs":"default"}
 {"level":"info","ts":...,"logger":"cts_controller","msg":"Do nothing, suite is finished","suite":"testsuite-all"}
 ```
 
-After controller finished processing created test suite, the suite is marked as a `Succeeded`:
+After the controller finishes processing the created test suite, the suite is marked as a **Succeeded**:
 `kubectl get ClusterTestSuite testsuite-all -oyaml`
 
 ```
@@ -59,7 +58,7 @@ status:
 
 ```
 
-To learn which testing pods were created, execute the following command:
+To learn which testing Pods were created, run:
 ```kubeclt get pods -l testing.kyma-project.io/created-by-octopus=true ```
 
 
