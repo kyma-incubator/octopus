@@ -1,5 +1,5 @@
-## Example
-In this example, we are going to create `TestDefinition` and `ClusterTestSuite` to show Octopus in action.
+## Tutorial
+In this tutorial, you create `TestDefinition` and `ClusterTestSuite` to show Octopus in action.
 
 1. Prepare data
 Create `TestDefinition` and `ClusterTestSuite`:
@@ -14,7 +14,7 @@ Created `TestDefinition` is very simple, it just executes `pwd` command in the `
 image, so it should always succeed.  
  
 
-2. Run controller:
+2. Run the controller:
 ```
 cd $GOPATH/src/github.com/kyma-incubator/octopus
 make run
@@ -26,7 +26,9 @@ Then you should see in the logs similar output:
 {"level":"info","ts":...,"logger":"cts_controller","msg":"Do nothing, suite is finished","suite":"testsuite-all"}
 ```
 
-After controller finished processing created test suite, it should be marked as a `Succeeded`:
+After controller finished processing created test suite, it is be marked as a `Succeeded`:
+`kubectl get ClusterTestSuite testsuite-all -oyaml`
+
 ```
 apiVersion: testing.kyma-project.io/v1alpha1
 kind: ClusterTestSuite
@@ -57,7 +59,7 @@ status:
 
 ```
 
-Under the hood, Octopus created following testing Pod:
+Under the hood, Octopus created the following testing Pod:
 ```
 apiVersion: v1
 kind: Pod

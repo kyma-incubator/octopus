@@ -16,7 +16,7 @@ Definitely, developers should strive to improve tests and make them stable, but 
 This can be helpful when a developer adds a new test and he/she needs to validate if a test is stable or he wants to reproduce a problem that sometimes occurs on CI.
 1. There is only limited support for concurrent testing. 
 Developer should be able to decide if given test is prepared to be executed concurrently with other tests.
-Person who executes tests should be able how many concurent tests can be executed, depending on the cluster size. 
+Person who executes tests should be able how many conccurent tests can be executed, depending on the cluster size. 
 
 ## Prerequisites
 

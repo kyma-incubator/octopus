@@ -2,22 +2,15 @@
 
 ## Overview
 
-The folder contains documents that provide an insight into Prow configuration, development, and testing.
+The folder contains documents that provide an insight into Octopus functionality.
 
 <!-- Update the list each time you modify the document structure in this folder. -->
 
 Read the documents to learn how to:
 
-- [Configure Prow on a production cluster](./production-cluster-configuration.md) based on the preconfigured Google Cloud Storage (GCS) resources.
-- [Create a service account](./prow-secrets-management.md) and store its encrypted key in a GCS bucket.
-- [Install and configure Prow](./prow-installation-on-forks.md) on a forked repository to test and develop it on your own.
-- [Install and manage monitoring](./prow-monitoring.md) on a Prow cluster.
-- [Create, modify, and remove standard component jobs](./component-jobs.md) for the Prow pipeline.
+- [Define test and run test suite](./08-tutorial.md) 
 
 Find out more about:
 
-- [Prow architecture](./prow-architecture.md) and its setup in the Kyma project.
-- [ProwJobs](./prow-jobs.md) for details on ProwJobs.
-- [Obligatory security measures](obligatory-security-measures.md) to take regularly for the Prow production cluster and when someone leaves the Kyma project.
-- [Presets](./presets.md) you can use to define ProwJobs.
-- [Authorization](./authorization.md) concepts employed in Prow.
+- [TestDefinition CRD](./06-00-CRD-TestDefinition.md) that defines your test as a Pod specification.
+- [ClusterTestSuite CRD](./06-01-CRD-ClusterTestSuite.md) that defines how to execute tests and what to execute.
