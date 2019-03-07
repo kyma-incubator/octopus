@@ -8,15 +8,15 @@ Octopus is a testing framework that allows you to run tests defined as Docker im
 ## Purpose
 Octopus was created in response to `helm test` limitations:
 1. There is no possibility to run only a subset of tests. 
-This can be especially useful for local development, when developer wants to execute only tests that 
+This can be especially useful for local development when a developer wants to execute only tests that 
 his local changes can affect.  
 1. There is no possibility to retry only failed tests. Flaky tests are an everyday reality. 
 Definitely, developers should strive to improve tests and make them stable, but we should accept that they will exist.
-1. There is no possibility to run given test many times. 
+1. There is no possibility to run a given test many times. 
 This can be helpful when a developer adds a new test and he/she needs to validate if a test is stable or he wants to reproduce a problem that sometimes occurs on CI.
 1. There is only limited support for concurrent testing. 
-Developer should be able to decide if given test is prepared to be executed concurrently with other tests.
-Person who executes tests should be able how many conccurent tests can be executed, depending on the cluster size. 
+A developer should be able to decide if a given test is prepared to be executed concurrently with other tests.
+A person who executes tests should be able how many concurrent tests can be executed, depending on the cluster size. 
 
 ## Prerequisites
 

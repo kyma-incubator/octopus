@@ -3,7 +3,7 @@ title: ClusterTestSuite
 type: Custom Resource
 ---
 
-The `ClusterTest` CustomResourceDefinition (CRD) is a detailed description of the kind of data and the format used to define which tests to execute and how execute them. 
+The `ClusterTestSuite` CustomResourceDefinition (CRD) is a detailed description of the kind of data and the format used to define which tests to execute and how to execute them. 
 To get the up-to-date CRD and show the output in the `yaml` format, run this command:
 
 ```
@@ -31,13 +31,13 @@ This table lists all the possible parameters of a given resource together with t
 | Parameter   |      Mandatory      |  Description |
 |:----------:|:-------------:|:------|
 | **metadata.name** |    **YES**   | Specifies the name of the CR. |
-| **spec.selectors** | **NO** | Defines which tests should be executed. You can define tests by specifying their names or labels. Selectors are additive.  If nothing is provided, all tests from all namespaces will be executed.
+| **spec.selectors** | **NO** | Defines which tests should be executed. You can define tests by specifying their names or labels. Selectors are additive.  If nothing is provided, all tests from all namespaces are executed.
 | **spec.selectors.matchNames** | **NO** | List of TestDefinitions to execute. For every element on the list, specify **name** and **namespace** that refers to a TestDefinition. This feature is not yet implemented. |
-| **spec.selectors.matchLabels** | **NO** | List of labels that matches labels of TestDefinitions. A TestDefinition is selected if **at least** one label matches. This feature is not yet implemented. | 
-| **spec.concurrency** | **NO** | Defines how many tests can be executed at the same time. Depends on a cluster size and it's load. Default value is 1. This feature is not yet implemented. 
-| **spec.suiteTimeout** | **NO** | Defines maximal suite duration after which test executions are interrupted and the suite is marked as a Failed. Default values is one hour. This feature is not yet implemented. 
-| **spec.count** | **NO** | Defines how many times every test should be executed. **Spec.Count** and **Spec.MaxRetries** are mutually exclusive. Default value is 1. This feature is not yet implemented. 
-| **spec.maxRetries** | **NO** | Defines how many times, a given test will be retried in case of it's failure. A Suite is marked as a Succeeded even if some test failed and then finally succeed. Default value is 0 - no retries. This feature is not yet implemented. 
+| **spec.selectors.matchLabels** | **NO** | List of labels that match labels of TestDefinitions. A TestDefinition is selected if **at least** one label matches. This feature is not yet implemented. | 
+| **spec.concurrency** | **NO** | Defines how many tests can be executed at the same time. Depends on cluster size and it's load. The default value is 1. This feature is not yet implemented. 
+| **spec.suiteTimeout** | **NO** | Defines maximal suite duration after which test executions are interrupted and the suite is marked as a Failed. The default values is one hour. This feature is not yet implemented. 
+| **spec.count** | **NO** | Defines how many times every test should be executed. **Spec.Count** and **Spec.MaxRetries** are mutually exclusive. The default value is 1. This feature is not yet implemented. 
+| **spec.maxRetries** | **NO** | Defines how many times a given test is retried in case of its failure. A Suite is marked as a Succeeded even if some test failed and then finally succeed. Default value is 0 - no retries. This feature is not yet implemented. 
 
 ## Custom resource status
 

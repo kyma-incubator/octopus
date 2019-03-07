@@ -26,7 +26,7 @@ Then you should see in the logs similar output:
 {"level":"info","ts":...,"logger":"cts_controller","msg":"Do nothing, suite is finished","suite":"testsuite-all"}
 ```
 
-After controller finished processing created test suite, it is be marked as a `Succeeded`:
+After controller finished processing created test suite, the suite is marked as a `Succeeded`:
 `kubectl get ClusterTestSuite testsuite-all -oyaml`
 
 ```
@@ -59,7 +59,10 @@ status:
 
 ```
 
-Under the hood, Octopus created the following testing Pod:
+To learn which testing pods were created, execute the following command:
+```kubeclt get pods -l testing.kyma-project.io/created-by-octopus=true ```
+
+
 ```
 apiVersion: v1
 kind: Pod

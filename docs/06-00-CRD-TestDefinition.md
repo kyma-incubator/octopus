@@ -39,13 +39,10 @@ This table lists all the possible parameters of a given resource together with t
 | Parameter   |      Mandatory      |  Description |
 |:-----------:|:-------------------:|:-------------|
 | **metadata.name** |    **YES**   | Specifies the name of the CR. |
-| **Spec.Template** |    **YES**   | An object that describes the pod that will be created. This field is of PodTemplateSpec type from Kubernetes API and its detailed description can be found [here](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#podtemplatespec-v1-core)  |
-| **Spec.Skip**     |    **NO**    | Mark that test should not be executed. Default value is `false`. This feature is not yet implemented. |
-| **Spec.DisableConcurrency** | **NO** | Disallow running the test concurrently with other tests. Default value is `false`. This feature is not yet implemented. 
-| **Spec.Timeout** | **NO** | Define maximal duration of the test, after which it should be terminated and it's execution marked as a failed. No default value. This feature is not yet implemented. 
-
-
-
+| **spec.template** |    **YES**   | An object that describes the pod that will be created. This field is of PodTemplateSpec type from Kubernetes API and its detailed description can be found [here](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#podtemplatespec-v1-core)  |
+| **spec.skip**     |    **NO**    | Mark that test should not be executed. The default vaule is `false`. This feature is not yet implemented. |
+| **spec.disableConcurrency** | **NO** | Disallow running the test concurrently with other tests. The default vaule is `false`. This feature is not yet implemented. 
+| **spec.timeout** | **NO** | Define maximal duration of the test, after which it should be terminated and it's execution marked as a **Failed**. No The default vaule. This feature is not yet implemented. 
 
 ## Related resources and components
 
