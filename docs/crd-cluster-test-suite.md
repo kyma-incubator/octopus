@@ -42,8 +42,8 @@ This table lists all the possible status fields together with their descriptions
 
 | Field             |  Description |
 |:-----------------:|:-------------:|
-| **status.startTime** | Specifies time when the suite's test execution starts. |
-| **status.completionTime** | Specifies time when the suite's test execution finishes. |
+| **status.startTime** | Specifies the time when the suite's test execution starts. |
+| **status.completionTime** | Specifies the time when the suite's test execution finishes. |
 | **status.conditions** | Lists the suite conditions. |
 | **status.conditions[].type** | Specifies the type of condition. These are the possible suite conditions: **Uninitialized**, **Running**, **Error**, **Failed**, and **Succeeded**. |
 | **status.conditions[].status** | Determines if the suite is in a given state. The possible values are **True**, **False**, and **Unknown**. |
@@ -56,8 +56,8 @@ This table lists all the possible status fields together with their descriptions
 | **status.results[].executions[]** | Lists executions for a given TestDefinition. |
 | **status.results[].executions[].id** | Provides the ID of an execution that is the same as the testing Pod name. |
 | **status.results[].executions[].podPhase** | Specifies the phase of the testing Pod. The possible values are **Pending**, **Running**, **Succeeded**, **Failed**, and **Unknown**. |
-| **status.results[].executions[].startTime** | Time when testing Pod was observed in **Running** phase. |
-| **status.results[].executions[].completionTime** | Time when testing pod was observed in **Succeeded** or **Failed** phase. |
+| **status.results[].executions[].startTime** | Specifies the time when the testing Pod was observed in the **Running** phase. |
+| **status.results[].executions[].completionTime** | Specifies the time when the testing Pod was observed in the **Succeeded** or **Failed** phase. |
 | **status.results[].executions[].reason** | Provides one-word, CamelCase reason for the Pod's phase last transition. |
  | **status.results[].executions[].message** | Provides a human-readable message with details about last Pod's phase transition. |
 
@@ -69,7 +69,7 @@ These are the resources related to this CR:
 
 | Custom resource |   Description |
 |:----------:|:------|
-| [TestDefinition](./crd-test-definition.md) | Defines test that can be executed by a ClusterTestSuite |
+| [TestDefinition](./crd-test-definition.md) | Defines test that can be executed by a ClusterTestSuite. |
 
 These components use this CR:
 

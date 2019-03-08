@@ -38,7 +38,7 @@ This table lists all the possible parameters of a given resource together with t
 | **metadata.name** |    **YES**   | Specifies the name of the CR. |
 | **spec.template** |    **YES**   | Describes the Pod that will be created. This field is of `PodTemplateSpec` type from the Kubernetes API. Find its detailed description [here](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#podtemplatespec-v1-core)  |
 | **spec.skip**     |    **NO**    | Indicates that a test should not be executed. The default value is `false`. This feature is not yet implemented. |
-| **spec.disableConcurrency** | **NO** | Disallow running the test concurrently with other tests. The default vaule is `false`. This feature is not yet implemented. 
+| **spec.disableConcurrency** | **NO** | Disallows running the given test concurrently. The default value is `false`. This feature is not yet implemented. 
 | **spec.timeout** | **NO** | Defines the maximal duration of a test, after which it is terminated and marked as **Failed**. This feature is not yet implemented. 
 
 ## Related resources and components
