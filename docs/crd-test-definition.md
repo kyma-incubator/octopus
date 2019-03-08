@@ -1,14 +1,11 @@
----
-title: TestDefinition
-type: Custom Resource
----
+# TestDefinition Custom Resource Definition
 
 The `TestDefinition` CustomResourceDefinition (CRD) is a detailed description of the kind of data and the format used to define acceptance tests executed as a Pod 
 on a Kubernes cluster. 
 To get the up-to-date CRD and show the output in the `yaml` format, run this command:
 
 ```
-kubectl get crd TestDefinition -o yaml
+kubectl get crd testdefinitions.testing.kyma-project.io -o yaml
 ```
 
 ## Sample custom resource
@@ -50,7 +47,7 @@ These are the resources related to this CR:
 
 | Custom resource |   Description |
 |:----------:|:------|
-| ClusterTestSuite |  ClusterTestSuite defines which `TestDefinitions` to execute.  |
+| [ClusterTestSuite](./crd-cluster-test-suite.md) |  Defines `TestDefinitions` to execute.  |
 
 These components use this CR:
 

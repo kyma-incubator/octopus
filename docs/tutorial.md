@@ -9,10 +9,6 @@ kubectl apply -f config/samples/testdefinition.yaml
 kubectl apply -f config/samples/testsuite.yaml
 
 ```
-Created `TestDefinition` is very simple, it just executes `pwd` command in the `alpine:latest` 
-image, so it should always succeed.  
- 
-
 2. Run the controller:
 ```
 cd $GOPATH/src/github.com/kyma-incubator/octopus

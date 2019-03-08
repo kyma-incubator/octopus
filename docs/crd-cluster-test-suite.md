@@ -1,13 +1,10 @@
----
-title: ClusterTestSuite
-type: Custom Resource
----
+# ClusterTestSuite Custom Resource Definition
 
 The `ClusterTestSuite` CustomResourceDefinition (CRD) is a detailed description of the kind of data and the format used to define a suite of tests to execute and how to execute them. 
 To get the up-to-date CRD and show the output in the `yaml` format, run this command:
 
 ```
-kubectl get crd ClusterTestSuite -o yaml
+kubectl get crd clustertestsuites.testing.kyma-project.io -o yaml
 ```
 
 ## Sample custom resource
@@ -32,7 +29,7 @@ This table lists all the possible parameters of a given resource together with t
 |:----------:|:-------------:|:------|
 | **metadata.name** |    **YES**   | Specifies the name of the CR. |
 | **spec.selectors** | **NO** | Defines which tests should be executed. You can define tests by specifying their names or labels. Selectors are additive. If not defined, all tests from all Namespaces are executed.
-| **spec.selectors.matchNames** | **NO** | List of TestDefinitions to execute. For every element on the list, specify **name** and **namespace** that refers to a TestDefinition. This feature is not yet implemented. |
+| **spec.selectors.matchNames** | **NO** | Lists TestDefinitions to execute. For every element on the list, specify **name** and **namespace** that refers to a TestDefinition. This feature is not yet implemented. |
 | **spec.selectors.matchLabels** | **NO** | Lists labels that match TestDefinitions labels. A TestDefinition is selected if at least one label matches. This feature is not yet implemented. | 
 | **spec.concurrency** | **NO** | Defines how many tests can be executed at the same time, which depends on cluster size and its load. The default value is `1`. This feature is not yet implemented. 
 | **spec.suiteTimeout** | **NO** | Defines the maximal suite duration after which test executions are interrupted and marked as **Failed**. The default value is one hour. This feature is not yet implemented. 
@@ -72,7 +69,7 @@ These are the resources related to this CR:
 
 | Custom resource |   Description |
 |:----------:|:------|
-| TestDefinition | Defines test  |
+| [TestDefinition](./crd-test-definition.md) | Defines test that can be executed by a ClusterTestSuite |
 
 These components use this CR:
 
