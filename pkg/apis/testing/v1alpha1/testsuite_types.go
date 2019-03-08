@@ -108,7 +108,6 @@ type TestsSelector struct {
 	MatchNames []TestDefReference `json:"matchNames,omitempty"`
 	// Find test definitions by it's labels.
 	// TestDefinition should have AT LEAST one label listed here to be executed.
-	// Label value is irrelevant.
 	MatchLabels []string `json:"matchLabels,omitempty"`
 }
 
