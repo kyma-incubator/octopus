@@ -1,15 +1,16 @@
 # Tutorial
-Follow this tutorial to create `TestDefinition` and `ClusterTestSuite` CRDs and to see Octopus in action.
 
-1. Prepare Kubernetes cluster and ensure that `kubectl` is properly configured. One option is to use `minikube`.  
-1. Clone Octopus directory to your `$GOPATH`
+Follow this tutorial to create `TestDefinition` and `ClusterTestSuite` CRDs, and to see Octopus in action.
+
+1. Prepare a Kubernetes cluster and ensure that `kubectl` is properly configured by setting a `KUBECONFIG` environment variable. 
+1. Clone the Octopus directory to your `$GOPATH`:
 ```
 cd $GOPATH/src
 mkdir -p github.com/kyma-incubator/
 cd github.com/kyma-incubator/
 git clone https://github.com/kyma-incubator/octopus.git
 ```
-1. Create `TestDefinition` and `ClusterTestSuite` CRDs:
+3. Create `TestDefinition` and `ClusterTestSuite` CRDs:
 
 ```bash
 cd octopus
@@ -17,7 +18,7 @@ kubectl apply -f config/samples/testdefinition.yaml
 kubectl apply -f config/samples/testsuite.yaml
 
 ```
-2. Run Octopus:
+4. Run Octopus:
 ```
 cd $GOPATH/src/github.com/kyma-incubator/octopus
 make run
@@ -29,10 +30,9 @@ The sample output looks as follows:
 {"level":"info","ts":...,"logger":"cts_controller","msg":"Do nothing, suite is finished","suite":"testsuite-all"}
 ```
 
-As you can see from the output, Octopus detects ClusterTestSuite and initialize it with the matching TestDefinition. 
-Then, a testing Pod is created. When a testing Pod finishes, processing of the ClusterTestSuite is completed.
-You can see that the suite is marked as a **Succeeded**:
-
+Octopus detects ClusterTestSuite and initializes it with the matching TestDefinition. 
+Then, a testing Pod is created. When a testing Pod is completed, the ClusterTestSuite is marked as a **Succeeded**.
+To check the ClusterTestSuite status, run:
 ```
 kubectl get ClusterTestSuite testsuite-all -oyaml
 ```
@@ -53,7 +53,7 @@ status:
       id: octopus-testing-pod-jz9qq
       podPhase: Succeeded
       startTime: 2019-03-06T12:37:15Z
-    name: test-kubeless
+    name: test-example
     namespace: default
     status: Succeeded
   startTime: 2019-03-06T12:37:15Z

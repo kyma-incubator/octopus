@@ -6,7 +6,7 @@ metadata:
     controller-tools.k8s.io: "1.0"
     dependency/kubeless: "true"
     component/service-catalog: "true" # user has a freedom how to define labels
-  name: test-kubeless
+  name: test-example
 spec:
   skip: n
   disableConcurrency: n
