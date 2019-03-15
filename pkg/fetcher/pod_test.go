@@ -26,7 +26,7 @@ func TestGetPodsForSuite(t *testing.T) {
 
 	givenPod := v1.Pod{
 		ObjectMeta: v12.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", givenSuite.Name, 1),
+			Name:      fmt.Sprintf("%s-my-test-%d", givenSuite.Name, 1),
 			Namespace: "aaa",
 			Labels: map[string]string{
 				v1alpha1.LabelKeyCreatedByOctopus: "true",

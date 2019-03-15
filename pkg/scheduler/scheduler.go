@@ -72,7 +72,7 @@ func (s *Service) startPod(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDef
 	p.Labels = def.Spec.Template.Labels
 	p.Annotations = def.Spec.Template.Annotations
 
-	p.GenerateName = fmt.Sprintf("%s-", suite.Name)
+	p.GenerateName = fmt.Sprintf("%s-%s-", suite.Name, def.Name)
 	p.Namespace = def.Namespace
 
 	if p.Labels == nil {
