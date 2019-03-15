@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/kyma-incubator/octopus/pkg/scheduler"
-
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 	"github.com/kyma-incubator/octopus/pkg/fetcher"
 	"github.com/kyma-incubator/octopus/pkg/fetcher/automock"
@@ -22,9 +20,13 @@ import (
 
 func TestGetPodsForSuite(t *testing.T) {
 	// GIVEN
+	givenSuite := v1alpha1.ClusterTestSuite{ObjectMeta: v12.ObjectMeta{
+		Name: "test-all-suite",
+	}}
+
 	givenPod := v1.Pod{
 		ObjectMeta: v12.ObjectMeta{
-			Name:      fmt.Sprintf("%s%d", scheduler.TestingPodGeneratedName, 1),
+			Name:      fmt.Sprintf("%s-%d", givenSuite.Name, 1),
 			Namespace: "aaa",
 			Labels: map[string]string{
 				v1alpha1.LabelKeyCreatedByOctopus: "true",
@@ -32,10 +34,6 @@ func TestGetPodsForSuite(t *testing.T) {
 			},
 		},
 	}
-
-	givenSuite := v1alpha1.ClusterTestSuite{ObjectMeta: v12.ObjectMeta{
-		Name: "test-all-suite",
-	}}
 
 	mockReader := &automock.Reader{}
 	defer mockReader.AssertExpectations(t)

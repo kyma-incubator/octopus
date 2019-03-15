@@ -52,7 +52,7 @@ func TestTryScheduleHappyPath(t *testing.T) {
 	require.NoError(t, fakeCli.List(context.TODO(), &client.ListOptions{Namespace: "test-namespace"}, &actualPodList))
 	assert.Contains(t, actualPodList.Items, *pod)
 
-	assert.Equal(t, "octopus-testing-pod-0", pod.Name)
+	assert.Equal(t, uninitializedSuite.Name+"-0", pod.Name)
 	assert.Equal(t, "test-namespace", pod.Namespace)
 	assert.Len(t, pod.Spec.Containers, 1)
 	assert.Equal(t, "alpine", pod.Spec.Containers[0].Image)

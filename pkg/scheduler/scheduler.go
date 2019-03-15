@@ -13,10 +13,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-const (
-	TestingPodGeneratedName = "octopus-testing-pod-"
-)
-
 //go:generate go run ./../../vendor/github.com/vektra/mockery/cmd/mockery/mockery.go -name=StatusProvider -output=automock -outpkg=automock -case=underscore
 type StatusProvider interface {
 	GetNextToSchedule(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult
