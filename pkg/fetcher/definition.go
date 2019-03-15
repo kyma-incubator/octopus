@@ -43,7 +43,7 @@ func buildLabelsSelector(suite v1alpha1.ClusterTestSuite) (labels.Selector, erro
 		if err != nil {
 			return nil, err
 		}
-		selector.Add(*req)
+		selector = selector.Add(*req)
 	}
 	return selector, nil
 }

@@ -2,6 +2,7 @@ package fetcher_test
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
@@ -43,18 +44,27 @@ func TestFindMatching(t *testing.T) {
 				Namespace: "anynamespace",
 			},
 		})
-		spyCli := &spyReader{fakeCli}
+		spyCli := &spyReader{underlying: fakeCli}
 		service := fetcher.NewForDefinition(spyCli)
+		suite := v1alpha1.ClusterTestSuite{Spec: v1alpha1.TestSuiteSpec{
+			Selectors: v1alpha1.TestsSelector{
+				MatchLabels: []string{"my-label"},
+			},
+		}}
 		// WHEN
-		out, err := service.FindMatching(v1alpha1.ClusterTestSuite{})
+		out, err := service.FindMatching(suite)
 		// THEN
 		require.NoError(t, err)
 		assert.Len(t, out, 1)
+		selector := spyCli.listCallOpts.LabelSelector
+		assert.True(t, selector.Matches(labels.Set{"my-label": "", "other-label": ""}))
+		assert.False(t, selector.Matches(labels.Set{"other-label": ""}))
 	})
 }
 
 type spyReader struct {
-	underlying client.Reader
+	underlying   client.Reader
+	listCallOpts *client.ListOptions
 }
 
 func (s *spyReader) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
@@ -62,5 +72,6 @@ func (s *spyReader) Get(ctx context.Context, key client.ObjectKey, obj runtime.O
 }
 
 func (s *spyReader) List(ctx context.Context, opts *client.ListOptions, list runtime.Object) error {
+	s.listCallOpts = opts
 	return s.underlying.List(ctx, opts, list)
 }
