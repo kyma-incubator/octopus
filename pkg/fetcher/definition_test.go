@@ -1,6 +1,9 @@
 package fetcher_test
 
 import (
+	"context"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
@@ -40,11 +43,24 @@ func TestFindMatching(t *testing.T) {
 				Namespace: "anynamespace",
 			},
 		})
-		service := fetcher.NewForDefinition(fakeCli)
+		spyCli := &spyReader{fakeCli}
+		service := fetcher.NewForDefinition(spyCli)
 		// WHEN
 		out, err := service.FindMatching(v1alpha1.ClusterTestSuite{})
 		// THEN
 		require.NoError(t, err)
 		assert.Len(t, out, 1)
 	})
+}
+
+type spyReader struct {
+	underlying client.Reader
+}
+
+func (s *spyReader) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
+	return s.underlying.Get(ctx, key, obj)
+}
+
+func (s *spyReader) List(ctx context.Context, opts *client.ListOptions, list runtime.Object) error {
+	return s.underlying.List(ctx, opts, list)
 }
