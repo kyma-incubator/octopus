@@ -12,20 +12,39 @@ import (
 )
 
 func TestFindMatching(t *testing.T) {
-	// GIVEN
-	sch, err := v1alpha1.SchemeBuilder.Build()
-	require.NoError(t, err)
-	fakeCli := fake.NewFakeClientWithScheme(sch, &v1alpha1.TestDefinition{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      "test-def",
-			Namespace: "anynamespace",
-		},
+	t.Run("No filters", func(t *testing.T) {
+		// GIVEN
+		sch, err := v1alpha1.SchemeBuilder.Build()
+		require.NoError(t, err)
+		fakeCli := fake.NewFakeClientWithScheme(sch, &v1alpha1.TestDefinition{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "test-def",
+				Namespace: "anynamespace",
+			},
+		})
+		service := fetcher.NewForDefinition(fakeCli)
+		// WHEN
+		out, err := service.FindMatching(v1alpha1.ClusterTestSuite{})
+		// THEN
+		require.NoError(t, err)
+		assert.Len(t, out, 1)
 	})
-	service := fetcher.NewForDefinition(fakeCli)
-	// WHEN
-	out, err := service.FindMatching(v1alpha1.ClusterTestSuite{})
-	// THEN
-	require.NoError(t, err)
-	assert.Len(t, out, 1)
 
+	t.Run("Filter by labels", func(t *testing.T) {
+		// GIVEN
+		sch, err := v1alpha1.SchemeBuilder.Build()
+		require.NoError(t, err)
+		fakeCli := fake.NewFakeClientWithScheme(sch, &v1alpha1.TestDefinition{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "test-def",
+				Namespace: "anynamespace",
+			},
+		})
+		service := fetcher.NewForDefinition(fakeCli)
+		// WHEN
+		out, err := service.FindMatching(v1alpha1.ClusterTestSuite{})
+		// THEN
+		require.NoError(t, err)
+		assert.Len(t, out, 1)
+	})
 }
