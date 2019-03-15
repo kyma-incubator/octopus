@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 	"github.com/pkg/errors"
@@ -75,7 +76,7 @@ func (s *Service) startPod(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDef
 	p.Labels = def.Spec.Template.Labels
 	p.Annotations = def.Spec.Template.Annotations
 
-	p.GenerateName = TestingPodGeneratedName
+	p.GenerateName = fmt.Sprintf("%s-", suite.Name)
 	p.Namespace = def.Namespace
 
 	if p.Labels == nil {
