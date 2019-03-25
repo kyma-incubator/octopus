@@ -18,8 +18,14 @@ const (
 
 //go:generate go run ./../../vendor/github.com/vektra/mockery/cmd/mockery/mockery.go -name=StatusProvider -output=automock -outpkg=automock -case=underscore
 type StatusProvider interface {
-	GetNextToSchedule(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult
 	MarkAsScheduled(status v1alpha1.TestSuiteStatus, testName, testNs, podName string) (v1alpha1.TestSuiteStatus, error)
+	GetExecutionsInProgress(suite v1alpha1.ClusterTestSuite) []v1alpha1.TestExecution
+}
+
+type NextTestSelectorStrategy interface {
+	GetTestToRunConcurrently(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult
+	GetTestToRunSequentially(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult
+	IsApplicable(suite v1alpha1.ClusterTestSuite) bool
 }
 
 func NewService(statusProvider StatusProvider, reader client.Reader, writer client.Writer, scheme *runtime.Scheme) *Service {
@@ -32,14 +38,15 @@ func NewService(statusProvider StatusProvider, reader client.Reader, writer clie
 }
 
 type Service struct {
-	statusProvider StatusProvider
-	reader         client.Reader
-	writer         client.Writer
-	scheme         *runtime.Scheme
+	statusProvider             StatusProvider
+	reader                     client.Reader
+	writer                     client.Writer
+	scheme                     *runtime.Scheme
+	nextTestSelectorStrategies []NextTestSelectorStrategy
 }
 
 func (s *Service) TrySchedule(suite v1alpha1.ClusterTestSuite) (*v1.Pod, *v1alpha1.TestSuiteStatus, error) {
-	tr := s.statusProvider.GetNextToSchedule(suite)
+	tr := s.GetNextToSchedule(suite)
 	if tr == nil {
 		return nil, nil, nil
 	}
@@ -66,6 +73,44 @@ func (s *Service) getDefinition(name, ns string) (v1alpha1.TestDefinition, error
 		return v1alpha1.TestDefinition{}, errors.Wrapf(err, "while getting test fetcher [name: %s, namespace: %s]", name, ns)
 	}
 	return out, nil
+}
+
+// run concurrently, then run sequentially
+// TODO can I run the same test concurrently???
+// TODO maybe move it to scheduler???
+func (s *Service) GetNextToSchedule(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult {
+	concurrency := suite.Spec.Concurrency
+	running := s.statusProvider.GetExecutionsInProgress(suite)
+
+	if len(running) >= int(concurrency) {
+		// TODO logger
+		return nil
+	}
+
+	strategy := s.getStrategyForSuite(suite)
+	if strategy == nil {
+		// TODO logger, or return error
+		return nil
+	}
+
+	if toRunCandidate := strategy.GetTestToRunConcurrently(suite); toRunCandidate != nil {
+		return toRunCandidate
+	}
+
+	if toRunCandidate := strategy.GetTestToRunSequentially(suite); toRunCandidate != nil {
+		return toRunCandidate
+	}
+
+	return nil
+}
+
+func (s *Service) getStrategyForSuite(suite v1alpha1.ClusterTestSuite) NextTestSelectorStrategy {
+	for _, strategy := range s.nextTestSelectorStrategies {
+		if strategy.IsApplicable(suite) {
+			return strategy
+		}
+	}
+	return nil
 }
 
 func (s *Service) startPod(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDefinition) (*v1.Pod, error) {

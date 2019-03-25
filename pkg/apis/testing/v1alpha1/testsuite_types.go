@@ -134,10 +134,11 @@ type TestSuiteCondition struct {
 // TestResult gathers all executions for given TestDefinition
 type TestResult struct {
 	// Test name
-	Name       string          `json:"name"`
-	Namespace  string          `json:"namespace"`
-	Status     TestStatus      `json:"status"`
-	Executions []TestExecution `json:"executions"`
+	Name               string          `json:"name"`
+	Namespace          string          `json:"namespace"`
+	Status             TestStatus      `json:"status"`
+	Executions         []TestExecution `json:"executions"`
+	DisableConcurrency bool            `json:"disable_concurrency,omitempty"`
 }
 
 // TestExecution provides status for given test execution

@@ -55,8 +55,7 @@ spec:
               properties:
                 matchLabels:
                   description: Find test definitions by it's labels. TestDefinition
-                    should have AT LEAST one label listed here to be executed. Label
-                    value is irrelevant.
+                    should have AT LEAST one label listed here to be executed.
                   items:
                     type: string
                   type: array

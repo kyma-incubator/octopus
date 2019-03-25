@@ -11,8 +11,10 @@ import (
 
 type NowProvider func() time.Time
 
+
 type Service struct {
-	nowProvider NowProvider
+	nowProvider    NowProvider
+	repeatStrategy RepeatStrategy
 }
 
 func NewService(nowProvider NowProvider) *Service {
@@ -147,10 +149,11 @@ func (s *Service) InitializeTests(suite v1alpha1.ClusterTestSuite, defs []v1alph
 	out.Results = make([]v1alpha1.TestResult, len(defs))
 	for idx, def := range defs {
 		out.Results[idx] = v1alpha1.TestResult{
-			Name:       def.Name,
-			Namespace:  def.Namespace,
-			Status:     v1alpha1.TestNotYetScheduled,
-			Executions: make([]v1alpha1.TestExecution, 0),
+			Name:               def.Name,
+			Namespace:          def.Namespace,
+			Status:             v1alpha1.TestNotYetScheduled,
+			Executions:         make([]v1alpha1.TestExecution, 0),
+			DisableConcurrency: def.Spec.DisableConcurrency,
 		}
 	}
 
@@ -219,16 +222,21 @@ func (s *Service) getSuiteCondition(stat v1alpha1.TestSuiteStatus) v1alpha1.Test
 	return v1alpha1.SuiteUninitialized
 }
 
-func (s *Service) GetNextToSchedule(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult {
-	// TODO(aszecowka) https://github.com/kyma-incubator/octopus/issues/9 and https://github.com/kyma-incubator/octopus/issues/8
+func (s *Service) GetExecutionsInProgress(suite v1alpha1.ClusterTestSuite) []v1alpha1.TestExecution {
+	//TODO
+	out := make([]v1alpha1.TestExecution, 0)
 	for _, tr := range suite.Status.Results {
-		if len(tr.Executions) == 0 {
-			return &tr
+		for _, ex := range tr.Executions {
+			if ex.PodPhase == v1.PodPending || ex.PodPhase == v1.PodRunning {
+				out = append(out, ex)
+			}
 		}
 	}
-	return nil
-
+	return out
 }
+
+
+
 
 func (s *Service) MarkAsScheduled(status v1alpha1.TestSuiteStatus, testName, testNs, podName string) (v1alpha1.TestSuiteStatus, error) {
 	for idx, tr := range status.Results {
