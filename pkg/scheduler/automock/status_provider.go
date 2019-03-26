@@ -11,16 +11,16 @@ type StatusProvider struct {
 	mock.Mock
 }
 
-// GetNextToSchedule provides a mock function with given fields: suite
-func (_m *StatusProvider) GetNextToSchedule(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult {
+// GetExecutionsInProgress provides a mock function with given fields: suite
+func (_m *StatusProvider) GetExecutionsInProgress(suite v1alpha1.ClusterTestSuite) []v1alpha1.TestExecution {
 	ret := _m.Called(suite)
 
-	var r0 *v1alpha1.TestResult
-	if rf, ok := ret.Get(0).(func(v1alpha1.ClusterTestSuite) *v1alpha1.TestResult); ok {
+	var r0 []v1alpha1.TestExecution
+	if rf, ok := ret.Get(0).(func(v1alpha1.ClusterTestSuite) []v1alpha1.TestExecution); ok {
 		r0 = rf(suite)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v1alpha1.TestResult)
+			r0 = ret.Get(0).([]v1alpha1.TestExecution)
 		}
 	}
 

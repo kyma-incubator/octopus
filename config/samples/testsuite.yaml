@@ -7,4 +7,6 @@ metadata:
     controller-tools.k8s.io: "1.0"
   name: testsuite-all
 spec:
-  maxRetries: 1
+  maxRetries: 0
+  concurrency: 1
+  count: 5

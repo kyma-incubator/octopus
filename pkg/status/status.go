@@ -11,10 +11,8 @@ import (
 
 type NowProvider func() time.Time
 
-
 type Service struct {
-	nowProvider    NowProvider
-	repeatStrategy RepeatStrategy
+	nowProvider NowProvider
 }
 
 func NewService(nowProvider NowProvider) *Service {
@@ -223,7 +221,6 @@ func (s *Service) getSuiteCondition(stat v1alpha1.TestSuiteStatus) v1alpha1.Test
 }
 
 func (s *Service) GetExecutionsInProgress(suite v1alpha1.ClusterTestSuite) []v1alpha1.TestExecution {
-	//TODO
 	out := make([]v1alpha1.TestExecution, 0)
 	for _, tr := range suite.Status.Results {
 		for _, ex := range tr.Executions {
@@ -234,9 +231,6 @@ func (s *Service) GetExecutionsInProgress(suite v1alpha1.ClusterTestSuite) []v1a
 	}
 	return out
 }
-
-
-
 
 func (s *Service) MarkAsScheduled(status v1alpha1.TestSuiteStatus, testName, testNs, podName string) (v1alpha1.TestSuiteStatus, error) {
 	for idx, tr := range status.Results {

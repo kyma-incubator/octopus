@@ -685,6 +685,65 @@ func TestMarkAsScheduled(t *testing.T) {
 	}, actStatus)
 }
 
+func TestGetExecutionsInProgress(t *testing.T) {
+	sut := status.NewService(nil)
+	t.Run("returns nil if no tests to run", func(t *testing.T) {
+		// GIVEN
+		suite := v1alpha1.ClusterTestSuite{}
+		// WHEN
+		actual := sut.GetExecutionsInProgress(suite)
+		// THEN
+		require.Empty(t, actual)
+	})
+	t.Run("returns only Pending and Running executions", func(t *testing.T) {
+		// GIVEN
+		suite := v1alpha1.ClusterTestSuite{
+			Status: v1alpha1.TestSuiteStatus{
+				Results: []v1alpha1.TestResult{
+					{
+						Name: "test-1",
+						Executions: []v1alpha1.TestExecution{
+							{
+								ID:       "id-111",
+								PodPhase: v12.PodSucceeded,
+							},
+							{
+								ID:       "id-112",
+								PodPhase: v12.PodRunning,
+							},
+							{
+								ID:       "id-113",
+								PodPhase: v12.PodFailed,
+							},
+						},
+					},
+					{
+						Name: "test-2",
+						Executions: []v1alpha1.TestExecution{
+							{
+								ID:       "id-211",
+								PodPhase: v12.PodPending,
+							},
+							{
+								ID:       "id-212",
+								PodPhase: v12.PodFailed,
+							},
+						},
+					},
+				},
+			},
+		}
+		// WHEN
+		actual := sut.GetExecutionsInProgress(suite)
+		// THEN
+		require.Len(t, actual, 2)
+		assert.Contains(t, actual, v1alpha1.TestExecution{ID: "id-112", PodPhase: v12.PodRunning})
+		assert.Contains(t, actual, v1alpha1.TestExecution{ID: "id-211", PodPhase: v12.PodPending})
+
+	})
+
+}
+
 func mockNowProvider() func() time.Time {
 	startTime := getStartTime()
 	return func() time.Time {

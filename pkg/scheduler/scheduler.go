@@ -2,6 +2,8 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
+	"github.com/go-logr/logr"
 
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 	"github.com/pkg/errors"
@@ -22,31 +24,35 @@ type StatusProvider interface {
 	GetExecutionsInProgress(suite v1alpha1.ClusterTestSuite) []v1alpha1.TestExecution
 }
 
+// NextTestSelectorStrategy
 type NextTestSelectorStrategy interface {
 	GetTestToRunConcurrently(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult
 	GetTestToRunSequentially(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult
-	IsApplicable(suite v1alpha1.ClusterTestSuite) bool
 }
 
-func NewService(statusProvider StatusProvider, reader client.Reader, writer client.Writer, scheme *runtime.Scheme) *Service {
+func NewService(statusProvider StatusProvider, reader client.Reader, writer client.Writer, scheme *runtime.Scheme, logger logr.Logger) *Service {
 	return &Service{
 		statusProvider: statusProvider,
 		reader:         reader,
 		writer:         writer,
 		scheme:         scheme,
+		log:            logger,
 	}
 }
 
 type Service struct {
-	statusProvider             StatusProvider
-	reader                     client.Reader
-	writer                     client.Writer
-	scheme                     *runtime.Scheme
-	nextTestSelectorStrategies []NextTestSelectorStrategy
+	statusProvider StatusProvider
+	reader         client.Reader
+	writer         client.Writer
+	scheme         *runtime.Scheme
+	log            logr.Logger
 }
 
 func (s *Service) TrySchedule(suite v1alpha1.ClusterTestSuite) (*v1.Pod, *v1alpha1.TestSuiteStatus, error) {
-	tr := s.GetNextToSchedule(suite)
+	tr, err := s.getNextToSchedule(suite)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "while getting next to schedule")
+	}
 	if tr == nil {
 		return nil, nil, nil
 	}
@@ -61,7 +67,7 @@ func (s *Service) TrySchedule(suite v1alpha1.ClusterTestSuite) (*v1.Pod, *v1alph
 
 	curr, err := s.statusProvider.MarkAsScheduled(suite.Status, tr.Name, tr.Namespace, pod.Name)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "while scheduling suite [%s]", suite.Name)
+		return nil, nil, errors.Wrapf(err, "while marking suite [%s] as Scheduled", suite.Name)
 	}
 	return pod, &curr, nil
 }
@@ -70,47 +76,58 @@ func (s *Service) getDefinition(name, ns string) (v1alpha1.TestDefinition, error
 	var out v1alpha1.TestDefinition
 	err := s.reader.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: ns}, &out)
 	if err != nil {
-		return v1alpha1.TestDefinition{}, errors.Wrapf(err, "while getting test fetcher [name: %s, namespace: %s]", name, ns)
+		return v1alpha1.TestDefinition{}, errors.Wrapf(err, "while getting test definition [name: %s, namespace: %s]", name, ns)
 	}
 	return out, nil
 }
 
-// run concurrently, then run sequentially
-// TODO can I run the same test concurrently???
-// TODO maybe move it to scheduler???
-func (s *Service) GetNextToSchedule(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult {
-	concurrency := suite.Spec.Concurrency
+func (s *Service) getNextToSchedule(suite v1alpha1.ClusterTestSuite) (*v1alpha1.TestResult, error) {
+	suite = s.normalizeSuite(suite)
 	running := s.statusProvider.GetExecutionsInProgress(suite)
 
-	if len(running) >= int(concurrency) {
-		// TODO logger
-		return nil
+	logSuite := s.log.WithValues("suite", suite.Name)
+	if len(running) >= int(suite.Spec.Concurrency) {
+		logSuite.Info("Cannot get next test to schedule, max concurrency reached", "running", len(running), "concurrency", suite.Spec.Concurrency)
+		return nil, nil
 	}
 
 	strategy := s.getStrategyForSuite(suite)
 	if strategy == nil {
-		// TODO logger, or return error
-		return nil
+		err := fmt.Errorf("cannot find test selector strategy that is applicable for suite [%s]", suite.Name)
+		logSuite.Error(err, "No applicable strategy")
+		return nil, err
 	}
 
 	if toRunCandidate := strategy.GetTestToRunConcurrently(suite); toRunCandidate != nil {
-		return toRunCandidate
+		return toRunCandidate, nil
 	}
 
-	if toRunCandidate := strategy.GetTestToRunSequentially(suite); toRunCandidate != nil {
-		return toRunCandidate
+	if len(running) == 0 {
+		if toRunCandidate := strategy.GetTestToRunSequentially(suite); toRunCandidate != nil {
+			return toRunCandidate, nil
+		}
 	}
 
-	return nil
+	logSuite.Info("No tests to execute right now")
+	return nil, nil
+}
+
+func (s *Service) normalizeSuite(suite v1alpha1.ClusterTestSuite) v1alpha1.ClusterTestSuite {
+	if suite.Spec.Concurrency == 0 {
+		suite.Spec.Concurrency = 1
+	}
+	if suite.Spec.Count == 0 {
+		suite.Spec.Count = 1
+	}
+	return suite
 }
 
 func (s *Service) getStrategyForSuite(suite v1alpha1.ClusterTestSuite) NextTestSelectorStrategy {
-	for _, strategy := range s.nextTestSelectorStrategies {
-		if strategy.IsApplicable(suite) {
-			return strategy
-		}
+	if suite.Spec.MaxRetries == 0 {
+		return &repeatStrategy{}
 	}
 	return nil
+
 }
 
 func (s *Service) startPod(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDefinition) (*v1.Pod, error) {
@@ -137,7 +154,7 @@ func (s *Service) startPod(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDef
 
 	err := s.writer.Create(context.TODO(), p)
 	if err != nil {
-		return nil, errors.Wrapf(err, "while creating testing pod for suite [%s] and test fetcher [name: %s, namespace: %s]", suite.Name, def.Name, def.Namespace)
+		return nil, errors.Wrapf(err, "while creating testing pod for suite [%s] and test definition [name: %s, namespace: %s]", suite.Name, def.Name, def.Namespace)
 	}
 	return p, nil
 }

@@ -1,8 +1,7 @@
-package status_test
+package scheduler
 
 import (
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
-	"github.com/kyma-incubator/octopus/pkg/status"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -11,32 +10,8 @@ import (
 //GetTestToRunConcurrently
 //GetTestToRunSequentially
 
-func TestRepeatStrategyIsApplicable(t *testing.T) {
-	sut := status.RepeatStrategy{}
-
-	t.Run("returns true", func(t *testing.T) {
-		// WHEN
-		actual := sut.IsApplicable(v1alpha1.ClusterTestSuite{Spec: v1alpha1.TestSuiteSpec{
-			MaxRetries: 0,
-		}})
-		// THEN
-		assert.True(t, actual)
-	})
-
-	t.Run("returns false", func(t *testing.T) {
-		// WHEN
-		actual := sut.IsApplicable(v1alpha1.ClusterTestSuite{Spec: v1alpha1.TestSuiteSpec{
-			MaxRetries: 123,
-		}})
-		// THEN
-		assert.False(t, actual)
-
-	})
-
-}
-
 func TestRepeatStrategyGetConcurrently(t *testing.T) {
-	sut := status.RepeatStrategy{}
+	sut := repeatStrategy{}
 
 	t.Run("return nil when no tests defined", func(t *testing.T) {
 		// GIVEN
@@ -48,6 +23,9 @@ func TestRepeatStrategyGetConcurrently(t *testing.T) {
 	t.Run("ignore tests with disabled concurrency", func(t *testing.T) {
 		// GIVEN
 		suite := v1alpha1.ClusterTestSuite{
+			Spec: v1alpha1.TestSuiteSpec{
+				Count: 1,
+			},
 			Status: v1alpha1.TestSuiteStatus{
 				Results: []v1alpha1.TestResult{
 					{
@@ -136,11 +114,11 @@ func TestRepeatStrategyGetConcurrently(t *testing.T) {
 }
 
 func TestRepeatStrategyGetSequentially(t *testing.T) {
-	sut := status.RepeatStrategy{}
+	sut := repeatStrategy{}
 
 	t.Run("return nil when no tests defined", func(t *testing.T) {
 		// GIVEN
-		suite := v1alpha1.ClusterTestSuite{}
+		suite := v1alpha1.ClusterTestSuite{Spec: v1alpha1.TestSuiteSpec{Count: 1}}
 		// WHEN & THEN
 		assert.Nil(t, sut.GetTestToRunSequentially(suite))
 	})
@@ -148,6 +126,7 @@ func TestRepeatStrategyGetSequentially(t *testing.T) {
 	t.Run("ignore tests with enabled concurrency", func(t *testing.T) {
 		// GIVEN
 		suite := v1alpha1.ClusterTestSuite{
+			Spec: v1alpha1.TestSuiteSpec{Count: 1},
 			Status: v1alpha1.TestSuiteStatus{
 				Results: []v1alpha1.TestResult{
 					{

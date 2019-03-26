@@ -40,30 +40,20 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-const succeededSuiteTimeout = time.Second * 5
+const succeededSuiteTimeout = time.Second * 20
 
 func TestReconcileClusterTestSuite(t *testing.T) {
 	// GIVEN
 	ctx := context.Background()
 	logf.SetLogger(logf.ZapLogger(false))
 
-	testDef := &testingv1alpha1.TestDefinition{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-ls-command", Namespace: "default"},
-		Spec: testingv1alpha1.TestDefinitionSpec{
-			Template: v1.PodTemplateSpec{
-
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						{
-							Name:    "test",
-							Image:   "alpine:3.9",
-							Command: []string{"ls"}},
-					},
-				},
-			},
+	suite := &testingv1alpha1.ClusterTestSuite{
+		ObjectMeta: metav1.ObjectMeta{Name: "suite-test-ls-command"},
+		Spec: testingv1alpha1.TestSuiteSpec{
+			Concurrency: 1,
+			Count:       2,
 		},
 	}
-	suite := &testingv1alpha1.ClusterTestSuite{ObjectMeta: metav1.ObjectMeta{Name: "suite-test-ls-command"}}
 
 	// Setup the Manager and Controller
 	mgr, err := manager.New(cfg, manager.Options{})
@@ -83,9 +73,13 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 
 	// WHEN
 	// Create the TestDefinition
-	err = c.Create(ctx, testDef)
+	err = c.Create(ctx, getTestDefLs())
 	require.NoError(t, err)
-	defer c.Delete(ctx, testDef)
+	defer c.Delete(ctx, getTestDefLs())
+
+	err = c.Create(ctx, getTestDefPwd())
+	require.NoError(t, err)
+	defer c.Delete(ctx, getTestDefPwd())
 
 	// Create the ClusterTestSuite object and expect the Reconcile
 	err = c.Create(ctx, suite)
@@ -96,6 +90,10 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 	repeat.FuncAtMost(t, func() error {
 		var actualSuite testingv1alpha1.ClusterTestSuite
 		err := c.Get(ctx, types.NamespacedName{Name: "suite-test-ls-command"}, &actualSuite)
+		//defer func() {
+		//	spew.Dump("actualSuite",actualSuite)
+		//}()
+
 		if err != nil {
 			return err
 		}
@@ -171,4 +169,42 @@ func startMockPodController(mgr manager.Manager) error {
 	}
 
 	return nil
+}
+
+func getTestDefLs() *testingv1alpha1.TestDefinition {
+	return &testingv1alpha1.TestDefinition{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-ls-command", Namespace: "default"},
+		Spec: testingv1alpha1.TestDefinitionSpec{
+			Template: v1.PodTemplateSpec{
+
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:    "test",
+							Image:   "alpine:3.9",
+							Command: []string{"ls"}},
+					},
+				},
+			},
+		},
+	}
+}
+
+func getTestDefPwd() *testingv1alpha1.TestDefinition {
+	return &testingv1alpha1.TestDefinition{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-pwd-command", Namespace: "default"},
+		Spec: testingv1alpha1.TestDefinitionSpec{
+			DisableConcurrency: true,
+			Template: v1.PodTemplateSpec{
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:    "test",
+							Image:   "alpine:3.9",
+							Command: []string{"pwd"}},
+					},
+				},
+			},
+		},
+	}
 }
