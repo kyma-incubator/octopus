@@ -17,12 +17,7 @@ package testsuite
 
 import (
 	"context"
-	"fmt"
-	"github.com/imdario/mergo"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/client-go/util/retry"
-	"reflect"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -54,6 +49,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	statusSvc := status.NewService(time.Now)
 	schedulerSvc := scheduler.NewService(statusSvc, mgr.GetClient(), mgr.GetClient(), mgr.GetScheme(), logf.Log.WithName("scheduler"))
 	podSvc := fetcher.NewForTestingPod(mgr.GetClient())
+
 	return &ReconcileTestSuite{
 		Client:            mgr.GetClient(),
 		scheme:            mgr.GetScheme(),
@@ -84,6 +80,11 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		IsController: true,
 		OwnerType:    &testingv1alpha1.ClusterTestSuite{},
 	})
+
+	// predicate.Funcs{CreateFunc: func(event event.CreateEvent) bool {
+	//		return false
+	//	}}
+
 	if err != nil {
 		return err
 	}
@@ -116,10 +117,11 @@ const (
 // +kubebuilder:rbac:groups=testing.kyma-project.io,resources=testsuites,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=testing.kyma-project.io,resources=testsuites/status,verbs=get;update;patch
 func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	n := time.Now()
-	defer func() {
-		fmt.Println("Reconcile took ", time.Now().Sub(n))
-	}()
+	//<-time.After(time.Second)
+	//n := time.Now()
+	//defer func() {
+	//	fmt.Println("Reconcile took ", time.Now().Sub(n))
+	//}()
 	ctx := context.TODO()
 	// Fetch the ClusterTestSuite suiteCopy
 	suite := &testingv1alpha1.ClusterTestSuite{}
@@ -173,22 +175,6 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	if err = retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		fmt.Println("Try update")
-		fresh := &testingv1alpha1.ClusterTestSuite{}
-		if err := r.Client.Get(ctx, types.NamespacedName{Name: suiteCopy.Name}, fresh); err != nil {
-			fmt.Println("Err on get,", err)
-			return err
-		}
-		deepEq := reflect.DeepEqual(fresh, suiteCopy)
-		fmt.Println("deepEq", deepEq)
-		if !deepEq {
-			fmt.Println("DIFF:", diff.ObjectDiff(fresh, suiteCopy))
-		}
-		err := mergo.Merge(suiteCopy, fresh)
-		if err != nil {
-			fmt.Println("mergo error", err)
-			return err
-		}
 		return r.Client.Status().Update(ctx, suiteCopy)
 	}); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "while updating status of running suite [%s]", suiteCopy.Name)

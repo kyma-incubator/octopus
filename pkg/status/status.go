@@ -64,24 +64,33 @@ func (s *Service) calculateTestStatus(tr v1alpha1.TestResult, maxRetries, count 
 	if len(tr.Executions) == 0 {
 		return v1alpha1.TestNotYetScheduled
 	}
-	// TODO(aszecowka): https://github.com/kyma-incubator/octopus/issues/8
-	if len(tr.Executions) > 1 {
+
+	// TODO handle maxRetries https://github.com/kyma-incubator/octopus/issues/8
+	if maxRetries > 0 {
 		return v1alpha1.TestUnknown
 	}
 
+	if len(tr.Executions) < int(count) {
+		return v1alpha1.TestRunning
+	}
+
+	var anyFailed bool
 	for _, exec := range tr.Executions {
 		switch exec.PodPhase {
 		case v1.PodPending:
 			return v1alpha1.TestRunning
-		case v1.PodFailed:
-			return v1alpha1.TestFailed
 		case v1.PodRunning:
 			return v1alpha1.TestRunning
-		case v1.PodSucceeded:
-			return v1alpha1.TestSucceeded
+		case v1.PodFailed:
+			anyFailed = true
+		case v1.PodUnknown:
+			return v1alpha1.TestRunning
 		}
 	}
-	return v1alpha1.TestUnknown
+	if anyFailed {
+		return v1alpha1.TestFailed
+	}
+	return v1alpha1.TestSucceeded
 
 }
 
@@ -102,6 +111,7 @@ func (s *Service) adjustSuiteCondition(stat v1alpha1.TestSuiteStatus) v1alpha1.T
 			anyRunning = true
 
 		case v1alpha1.TestUnknown:
+			fmt.Println("Is UNKNOWN")
 			anyUnknown = true
 
 		case v1alpha1.TestFailed:

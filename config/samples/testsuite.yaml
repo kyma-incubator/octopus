@@ -8,5 +8,5 @@ metadata:
   name: testsuite-all
 spec:
   maxRetries: 0
-  concurrency: 1
-  count: 5
+  concurrency: 5
+  count: 15
