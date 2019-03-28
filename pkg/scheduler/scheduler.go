@@ -14,20 +14,20 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-const (
-	TestingPodGeneratedName = "octopus-testing-pod-"
-)
-
 //go:generate go run ./../../vendor/github.com/vektra/mockery/cmd/mockery/mockery.go -name=StatusProvider -output=automock -outpkg=automock -case=underscore
 type StatusProvider interface {
 	MarkAsScheduled(status v1alpha1.TestSuiteStatus, testName, testNs, podName string) (v1alpha1.TestSuiteStatus, error)
 	GetExecutionsInProgress(suite v1alpha1.ClusterTestSuite) []v1alpha1.TestExecution
 }
 
-// NextTestSelectorStrategy
-type NextTestSelectorStrategy interface {
+// nextTestSelectorStrategy
+type nextTestSelectorStrategy interface {
 	GetTestToRunConcurrently(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult
 	GetTestToRunSequentially(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult
+}
+
+type podNameProvider interface {
+	GetName(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDefinition) (string, error)
 }
 
 func NewService(statusProvider StatusProvider, reader client.Reader, writer client.Writer, scheme *runtime.Scheme, logger logr.Logger) *Service {
@@ -122,12 +122,16 @@ func (s *Service) normalizeSuite(suite v1alpha1.ClusterTestSuite) v1alpha1.Clust
 	return suite
 }
 
-func (s *Service) getStrategyForSuite(suite v1alpha1.ClusterTestSuite) NextTestSelectorStrategy {
+func (s *Service) getStrategyForSuite(suite v1alpha1.ClusterTestSuite) nextTestSelectorStrategy {
 	if suite.Spec.MaxRetries == 0 {
 		return &repeatStrategy{}
 	}
 	return nil
 
+}
+
+func (s *Service) getNameProvider() podNameProvider {
+	return &PodNameGenerator{}
 }
 
 func (s *Service) startPod(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDefinition) (*v1.Pod, error) {
@@ -137,7 +141,11 @@ func (s *Service) startPod(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDef
 	p.Labels = def.Spec.Template.Labels
 	p.Annotations = def.Spec.Template.Annotations
 
-	p.GenerateName = TestingPodGeneratedName
+	name, err := s.getNameProvider().GetName(suite, def)
+	if err != nil {
+		return nil, err
+	}
+	p.Name = name
 	p.Namespace = def.Namespace
 
 	if p.Labels == nil {
@@ -152,7 +160,7 @@ func (s *Service) startPod(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDef
 		return nil, errors.Wrapf(err, "while setting controller reference, suite [%s], pod [name %s, namespace: %s]", suite.Name, p.Name, p.Namespace)
 	}
 
-	err := s.writer.Create(context.TODO(), p)
+	err = s.writer.Create(context.TODO(), p)
 	if err != nil {
 		return nil, errors.Wrapf(err, "while creating testing pod for suite [%s] and test definition [name: %s, namespace: %s]", suite.Name, def.Name, def.Namespace)
 	}

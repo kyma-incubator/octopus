@@ -29,7 +29,7 @@ func TestTryScheduleHappyPath(t *testing.T) {
 
 	scheduledSuite := uninitializedSuite.DeepCopy()
 	scheduledSuite.Status.Conditions[0].Type = v1alpha1.SuiteRunning
-	scheduledSuite.Status.Results[0].Executions = []v1alpha1.TestExecution{{ID: "octopus-testing-pod-0", PodPhase: v12.PodRunning}}
+	scheduledSuite.Status.Results[0].Executions = []v1alpha1.TestExecution{{ID: "oct-tp-test-all-test-name-0", PodPhase: v12.PodRunning}}
 
 	mockStatusProvider := &automock.StatusProvider{}
 	defer mockStatusProvider.AssertExpectations(t)
@@ -39,9 +39,8 @@ func TestTryScheduleHappyPath(t *testing.T) {
 	fakeCli, sch, err := getFakeClient(&givenTd)
 
 	require.NoError(t, err)
-	wrappedWriter := podWriterExtended{cli: fakeCli}
 
-	sut := scheduler.NewService(mockStatusProvider, fakeCli, &wrappedWriter, sch, rlog.NullLogger{})
+	sut := scheduler.NewService(mockStatusProvider, fakeCli, fakeCli, sch, rlog.NullLogger{})
 
 	// WHEN
 	pod, status, err := sut.TrySchedule(uninitializedSuite)
@@ -54,7 +53,7 @@ func TestTryScheduleHappyPath(t *testing.T) {
 	require.NoError(t, fakeCli.List(context.TODO(), &client.ListOptions{Namespace: "test-namespace"}, &actualPodList))
 	assert.Contains(t, actualPodList.Items, *pod)
 
-	assert.Equal(t, "octopus-testing-pod-0", pod.Name)
+	assert.Equal(t, "oct-tp-test-all-test-name-0", pod.Name)
 	assert.Equal(t, "test-namespace", pod.Namespace)
 	assert.Len(t, pod.Spec.Containers, 1)
 	assert.Equal(t, "alpine", pod.Spec.Containers[0].Image)
@@ -191,7 +190,7 @@ func TestTryScheduleErrorOnUpdatingStatus(t *testing.T) {
 
 	scheduledSuite := uninitializedSuite.DeepCopy()
 	scheduledSuite.Status.Conditions[0].Type = v1alpha1.SuiteRunning
-	scheduledSuite.Status.Results[0].Executions = []v1alpha1.TestExecution{{ID: "octopus-testing-pod-0", PodPhase: v12.PodRunning}}
+	scheduledSuite.Status.Results[0].Executions = []v1alpha1.TestExecution{{ID: "oct-tp-test-all-test-name-0", PodPhase: v12.PodRunning}}
 
 	mockStatusProvider := &automock.StatusProvider{}
 	defer mockStatusProvider.AssertExpectations(t)
@@ -199,11 +198,9 @@ func TestTryScheduleErrorOnUpdatingStatus(t *testing.T) {
 	mockStatusProvider.On("MarkAsScheduled", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(v1alpha1.TestSuiteStatus{}, errors.New("some error"))
 
 	fakeCli, sch, err := getFakeClient(&givenTd)
-
 	require.NoError(t, err)
-	wrappedWriter := podWriterExtended{cli: fakeCli}
 
-	sut := scheduler.NewService(mockStatusProvider, fakeCli, &wrappedWriter, sch, rlog.NullLogger{})
+	sut := scheduler.NewService(mockStatusProvider, fakeCli, fakeCli, sch, rlog.NullLogger{})
 
 	// WHEN
 	_, _, err = sut.TrySchedule(uninitializedSuite)
@@ -497,30 +494,4 @@ func givenUninitializedSuite(givenTr v1alpha1.TestResult) v1alpha1.ClusterTestSu
 		},
 	}
 	return uninitializedSuite
-}
-
-// podWriterExtended generates name from generateName by appending index
-type podWriterExtended struct {
-	cli client.Writer
-	idx int
-}
-
-func (w *podWriterExtended) Create(ctx context.Context, obj runtime.Object) error {
-	om, ok := obj.(*v12.Pod)
-	if !ok {
-		return errors.New("unsupported type")
-	}
-	if om.GenerateName != "" {
-		om.Name = fmt.Sprintf("%s%d", om.GenerateName, w.idx)
-		w.idx++
-	}
-	return w.cli.Create(ctx, obj)
-}
-
-func (w *podWriterExtended) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOptionFunc) error {
-	return w.cli.Delete(ctx, obj, opts...)
-}
-
-func (w *podWriterExtended) Update(ctx context.Context, obj runtime.Object) error {
-	return w.cli.Update(ctx, obj)
 }

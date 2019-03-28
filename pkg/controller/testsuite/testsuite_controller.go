@@ -17,7 +17,6 @@ package testsuite
 
 import (
 	"context"
-	"k8s.io/client-go/util/retry"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -69,13 +68,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for changes to ClusterTestSuite
+	// Watch for appliedChanges to ClusterTestSuite
 	err = c.Watch(&source.Kind{Type: &testingv1alpha1.ClusterTestSuite{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
-	// Watch for changes to Pods
+	// Watch for appliedChanges to Pods
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &testingv1alpha1.ClusterTestSuite{},
@@ -106,10 +105,11 @@ type ReconcileTestSuite struct {
 }
 
 const (
-	defaultRequeueAfter = time.Second * 5
+	requeueAfterNoChanges = time.Second * 5
+	requeueAfterChanges   = time.Second * 1
 )
 
-// Reconcile reads that state of the cluster for a ClusterTestSuite object and makes changes based on the state read
+// Reconcile reads that state of the cluster for a ClusterTestSuite object and makes appliedChanges based on the state read
 // and what is in the ClusterTestSuite.Spec
 
 // Automatically generate RBAC rules to allow the Controller to read and write Pods
@@ -117,7 +117,7 @@ const (
 // +kubebuilder:rbac:groups=testing.kyma-project.io,resources=testsuites,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=testing.kyma-project.io,resources=testsuites/status,verbs=get;update;patch
 func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	//<-time.After(time.Second)
+	//<-time.After(time.Millisecond * 100)
 	//n := time.Now()
 	//defer func() {
 	//	fmt.Println("Reconcile took ", time.Now().Sub(n))
@@ -153,7 +153,7 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 		if err := r.Client.Status().Update(ctx, suiteCopy); err != nil {
 			return reconcile.Result{}, errors.Wrapf(err, "while updating status of initialized suite [%s]", suiteCopy.Name)
 		}
-		return reconcile.Result{Requeue: true}, nil
+		return reconcile.Result{Requeue: true, RequeueAfter: requeueAfterChanges}, nil
 	}
 	if r.statusService.IsFinished(*suiteCopy) {
 		logSuite.Info("Do nothing, suite is finished")
@@ -174,18 +174,16 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 		suiteCopy.Status = *updatedStatus
 	}
 
-	if err = retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		return r.Client.Status().Update(ctx, suiteCopy)
-	}); err != nil {
+	if err := r.Client.Status().Update(ctx, suiteCopy); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "while updating status of running suite [%s]", suiteCopy.Name)
 	}
 
 	if pod != nil {
-		// requeue immediately to try schedule other tests
-		return reconcile.Result{Requeue: true, RequeueAfter: time.Second}, nil
+		// requeue almost immediately to try schedule other tests
+		return reconcile.Result{Requeue: true, RequeueAfter: requeueAfterChanges}, nil
 	}
 
-	return reconcile.Result{Requeue: true, RequeueAfter: defaultRequeueAfter}, nil
+	return reconcile.Result{Requeue: true, RequeueAfter: requeueAfterNoChanges}, nil
 }
 
 func (r *ReconcileTestSuite) ensureStatusIsUpToDate(ctx context.Context, suite testingv1alpha1.ClusterTestSuite) (*testingv1alpha1.TestSuiteStatus, error) {
