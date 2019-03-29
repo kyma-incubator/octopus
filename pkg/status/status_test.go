@@ -744,6 +744,8 @@ func TestGetExecutionsInProgress(t *testing.T) {
 
 }
 
+// TODO test for calculateTestStatus
+
 func mockNowProvider() func() time.Time {
 	startTime := getStartTime()
 	return func() time.Time {

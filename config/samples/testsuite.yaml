@@ -9,4 +9,4 @@ metadata:
 spec:
   maxRetries: 0
   concurrency: 5
-  count: 15
+  count: 5

@@ -286,12 +286,12 @@ func TestGetNextToSchedule(t *testing.T) {
 			Status: v1alpha1.TestSuiteStatus{
 				Results: []v1alpha1.TestResult{
 					{
-						Name:               "test-1",
-						DisableConcurrency: true,
+						Name:                "test-1",
+						DisabledConcurrency: true,
 					},
 					{
-						Name:               "test-2",
-						DisableConcurrency: false,
+						Name:                "test-2",
+						DisabledConcurrency: false,
 						Executions: []v1alpha1.TestExecution{
 							{
 								ID: "id-222",
@@ -299,8 +299,8 @@ func TestGetNextToSchedule(t *testing.T) {
 						},
 					},
 					{
-						Name:               "test-3",
-						DisableConcurrency: false,
+						Name:                "test-3",
+						DisabledConcurrency: false,
 					},
 				},
 			},
@@ -325,8 +325,8 @@ func TestGetNextToSchedule(t *testing.T) {
 			Status: v1alpha1.TestSuiteStatus{
 				Results: []v1alpha1.TestResult{
 					{
-						Name:               "test-1",
-						DisableConcurrency: false,
+						Name:                "test-1",
+						DisabledConcurrency: false,
 						Executions: []v1alpha1.TestExecution{
 							{
 								ID:       "id-111",
@@ -335,8 +335,8 @@ func TestGetNextToSchedule(t *testing.T) {
 						},
 					},
 					{
-						Name:               "test-2",
-						DisableConcurrency: false,
+						Name:                "test-2",
+						DisabledConcurrency: false,
 						Executions: []v1alpha1.TestExecution{
 							{
 								ID:       "id-222",
@@ -345,9 +345,9 @@ func TestGetNextToSchedule(t *testing.T) {
 						},
 					},
 					{
-						Name:               "test-3",
-						DisableConcurrency: true,
-						Executions:         []v1alpha1.TestExecution{},
+						Name:                "test-3",
+						DisabledConcurrency: true,
+						Executions:          []v1alpha1.TestExecution{},
 					},
 				},
 			},
@@ -395,8 +395,8 @@ func TestGetNextToSchedule(t *testing.T) {
 			Status: v1alpha1.TestSuiteStatus{
 				Results: []v1alpha1.TestResult{
 					{
-						Name:               "test-1",
-						DisableConcurrency: false,
+						Name:                "test-1",
+						DisabledConcurrency: false,
 						Executions: []v1alpha1.TestExecution{
 							{
 								ID:       "id-111",
@@ -405,8 +405,8 @@ func TestGetNextToSchedule(t *testing.T) {
 						},
 					},
 					{
-						Name:               "test-2",
-						DisableConcurrency: false,
+						Name:                "test-2",
+						DisabledConcurrency: false,
 						Executions: []v1alpha1.TestExecution{
 							{
 								ID:       "id-222",
@@ -415,8 +415,8 @@ func TestGetNextToSchedule(t *testing.T) {
 						},
 					},
 					{
-						Name:               "test-3",
-						DisableConcurrency: true,
+						Name:                "test-3",
+						DisabledConcurrency: true,
 					},
 				},
 			},

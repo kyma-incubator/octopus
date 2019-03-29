@@ -7,8 +7,6 @@ import (
 	"testing"
 )
 
-//GetTestToRunConcurrently
-//GetTestToRunSequentially
 
 func TestRepeatStrategyGetConcurrently(t *testing.T) {
 	sut := repeatStrategy{}
@@ -29,16 +27,16 @@ func TestRepeatStrategyGetConcurrently(t *testing.T) {
 			Status: v1alpha1.TestSuiteStatus{
 				Results: []v1alpha1.TestResult{
 					{
-						Name:               "test1",
-						DisableConcurrency: true,
+						Name:                "test1",
+						DisabledConcurrency: true,
 					},
 					{
-						Name:               "test2",
-						DisableConcurrency: true,
+						Name:                "test2",
+						DisabledConcurrency: true,
 					},
 					{
-						Name:               "test3",
-						DisableConcurrency: false,
+						Name:                "test3",
+						DisabledConcurrency: false,
 					},
 				},
 			},
@@ -50,7 +48,7 @@ func TestRepeatStrategyGetConcurrently(t *testing.T) {
 		assert.Equal(t, "test3", actual.Name)
 	})
 
-	t.Run("ignore tests that were executed enough number of times", func(t *testing.T) {
+	t.Run("ignore tests that were executed required number of times", func(t *testing.T) {
 		// GIVEN
 		suite := v1alpha1.ClusterTestSuite{
 			Spec: v1alpha1.TestSuiteSpec{
@@ -59,8 +57,8 @@ func TestRepeatStrategyGetConcurrently(t *testing.T) {
 			Status: v1alpha1.TestSuiteStatus{
 				Results: []v1alpha1.TestResult{
 					{
-						Name:               "test1",
-						DisableConcurrency: false,
+						Name:                "test1",
+						DisabledConcurrency: false,
 						Executions: []v1alpha1.TestExecution{
 							{ID: "id-111"},
 							{ID: "id-222"},
@@ -68,8 +66,8 @@ func TestRepeatStrategyGetConcurrently(t *testing.T) {
 						},
 					},
 					{
-						Name:               "test2",
-						DisableConcurrency: false,
+						Name:                "test2",
+						DisabledConcurrency: false,
 					},
 				},
 			},
@@ -90,15 +88,15 @@ func TestRepeatStrategyGetConcurrently(t *testing.T) {
 			Status: v1alpha1.TestSuiteStatus{
 				Results: []v1alpha1.TestResult{
 					{
-						Name:               "test1",
-						DisableConcurrency: false,
+						Name:                "test1",
+						DisabledConcurrency: false,
 						Executions: []v1alpha1.TestExecution{
 							{ID: "id-111"},
 						},
 					},
 					{
-						Name:               "test-2",
-						DisableConcurrency: false,
+						Name:                "test-2",
+						DisabledConcurrency: false,
 						Executions: []v1alpha1.TestExecution{
 							{ID: "id-222"},
 						},
@@ -130,16 +128,16 @@ func TestRepeatStrategyGetSequentially(t *testing.T) {
 			Status: v1alpha1.TestSuiteStatus{
 				Results: []v1alpha1.TestResult{
 					{
-						Name:               "test1",
-						DisableConcurrency: false,
+						Name:                "test1",
+						DisabledConcurrency: false,
 					},
 					{
-						Name:               "test2",
-						DisableConcurrency: false,
+						Name:                "test2",
+						DisabledConcurrency: false,
 					},
 					{
-						Name:               "test3",
-						DisableConcurrency: true,
+						Name:                "test3",
+						DisabledConcurrency: true,
 					},
 				},
 			},
@@ -160,8 +158,8 @@ func TestRepeatStrategyGetSequentially(t *testing.T) {
 			Status: v1alpha1.TestSuiteStatus{
 				Results: []v1alpha1.TestResult{
 					{
-						Name:               "test1",
-						DisableConcurrency: true,
+						Name:                "test1",
+						DisabledConcurrency: true,
 						Executions: []v1alpha1.TestExecution{
 							{ID: "id-111"},
 							{ID: "id-222"},
@@ -169,8 +167,8 @@ func TestRepeatStrategyGetSequentially(t *testing.T) {
 						},
 					},
 					{
-						Name:               "test2",
-						DisableConcurrency: true,
+						Name:                "test2",
+						DisabledConcurrency: true,
 					},
 				},
 			},
@@ -191,15 +189,15 @@ func TestRepeatStrategyGetSequentially(t *testing.T) {
 			Status: v1alpha1.TestSuiteStatus{
 				Results: []v1alpha1.TestResult{
 					{
-						Name:               "test1",
-						DisableConcurrency: true,
+						Name:                "test1",
+						DisabledConcurrency: true,
 						Executions: []v1alpha1.TestExecution{
 							{ID: "id-111"},
 						},
 					},
 					{
-						Name:               "test-2",
-						DisableConcurrency: true,
+						Name:                "test-2",
+						DisabledConcurrency: true,
 						Executions: []v1alpha1.TestExecution{
 							{ID: "id-222"},
 						},

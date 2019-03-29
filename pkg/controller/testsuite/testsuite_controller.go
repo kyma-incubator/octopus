@@ -17,6 +17,9 @@ package testsuite
 
 import (
 	"context"
+	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -56,7 +59,8 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 		statusService:     statusSvc,
 		definitionService: fetcher.NewForDefinition(mgr.GetClient()),
 		podSvc:            podSvc,
-		log:               logf.Log.WithName("cts_controller")}
+		log:               logf.Log.WithName("cts_controller"),
+		prevReconcile:     make(chan time.Time, 1)}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -68,21 +72,20 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for appliedChanges to ClusterTestSuite
+	// Watch for changes to ClusterTestSuite
 	err = c.Watch(&source.Kind{Type: &testingv1alpha1.ClusterTestSuite{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
-	// Watch for appliedChanges to Pods
+	// Watch for changes to Pods
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &testingv1alpha1.ClusterTestSuite{},
-	})
-
-	// predicate.Funcs{CreateFunc: func(event event.CreateEvent) bool {
-	//		return false
-	//	}}
+	}, predicate.Funcs{CreateFunc: func(event event.CreateEvent) bool {
+		// TODO not tested
+		return false
+	}})
 
 	if err != nil {
 		return err
@@ -102,14 +105,16 @@ type ReconcileTestSuite struct {
 	statusService     SuiteStatusService
 	definitionService TestDefinitionService
 	log               logr.Logger
+	prevReconcile     chan time.Time
 }
 
 const (
 	requeueAfterNoChanges = time.Second * 5
 	requeueAfterChanges   = time.Second * 1
+	throttleTime          = time.Millisecond * 200
 )
 
-// Reconcile reads that state of the cluster for a ClusterTestSuite object and makes appliedChanges based on the state read
+// Reconcile reads that state of the cluster for a ClusterTestSuite object and makes changes based on the state read
 // and what is in the ClusterTestSuite.Spec
 
 // Automatically generate RBAC rules to allow the Controller to read and write Pods
@@ -117,12 +122,8 @@ const (
 // +kubebuilder:rbac:groups=testing.kyma-project.io,resources=testsuites,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=testing.kyma-project.io,resources=testsuites/status,verbs=get;update;patch
 func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	//<-time.After(time.Millisecond * 100)
-	//n := time.Now()
-	//defer func() {
-	//	fmt.Println("Reconcile took ", time.Now().Sub(n))
-	//}()
 	ctx := context.TODO()
+	r.throttleIfNeeded()
 	// Fetch the ClusterTestSuite suiteCopy
 	suite := &testingv1alpha1.ClusterTestSuite{}
 	err := r.Get(ctx, request.NamespacedName, suite)
@@ -184,6 +185,23 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	return reconcile.Result{Requeue: true, RequeueAfter: requeueAfterNoChanges}, nil
+}
+
+func (r *ReconcileTestSuite) throttleIfNeeded() {
+	// TODO
+	select {
+	case prev := <-r.prevReconcile:
+		elapsed := time.Now().Sub(prev)
+		toThrottle := throttleTime - elapsed
+		if toThrottle > 0 {
+			fmt.Println("Sleep for ", toThrottle)
+			<-time.After(toThrottle)
+		}
+	default:
+	}
+
+	r.prevReconcile <- time.Now()
+
 }
 
 func (r *ReconcileTestSuite) ensureStatusIsUpToDate(ctx context.Context, suite testingv1alpha1.ClusterTestSuite) (*testingv1alpha1.TestSuiteStatus, error) {

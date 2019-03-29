@@ -4,17 +4,19 @@ import (
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 )
 
+// repeatStrategy decides which next test to run concurrently and sequentially.
+// This strategy is used when maxRetries == 0.
 type repeatStrategy struct{}
 
 func (s *repeatStrategy) GetTestToRunConcurrently(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult {
 	return s.getTest(suite, func(tr v1alpha1.TestResult) bool {
-		return tr.DisableConcurrency == false
+		return tr.DisabledConcurrency == false
 	})
 }
 
 func (s *repeatStrategy) GetTestToRunSequentially(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult {
 	return s.getTest(suite, func(tr v1alpha1.TestResult) bool {
-		return tr.DisableConcurrency == true
+		return tr.DisabledConcurrency == true
 	})
 }
 

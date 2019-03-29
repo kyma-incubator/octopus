@@ -126,6 +126,7 @@ func (s *Service) getStrategyForSuite(suite v1alpha1.ClusterTestSuite) nextTestS
 	if suite.Spec.MaxRetries == 0 {
 		return &repeatStrategy{}
 	}
+	// TODO (aszecowka) https://github.com/kyma-incubator/octopus/issues/8
 	return nil
 
 }

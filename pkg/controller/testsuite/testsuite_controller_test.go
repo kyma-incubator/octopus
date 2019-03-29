@@ -57,6 +57,22 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 		require.NoError(t, err)
 		c := mgr.GetClient()
 
+		testNs := generateTestNs()
+		ctx := context.Background()
+
+		suite := &testingv1alpha1.ClusterTestSuite{
+			ObjectMeta: metav1.ObjectMeta{Name: "suite-test-repeat"},
+			Spec: testingv1alpha1.TestSuiteSpec{
+				Concurrency: 1,
+				Count:       2,
+			},
+		}
+
+		err = c.Create(ctx, suite)
+		require.NoError(t, err)
+
+		defer cleanupK8sObject(ctx, c, suite)
+
 		require.NoError(t, add(mgr, newReconciler(mgr)))
 		stopMgr, mgrStopped := StartTestManager(t, mgr)
 
@@ -65,8 +81,6 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 			mgrStopped.Wait()
 		}()
 
-		testNs := generateTestNs()
-		ctx := context.Background()
 		logf.SetLogger(logf.ZapLogger(false))
 
 		podReconciler, err := startMockPodController(mgr, 0)
@@ -90,21 +104,6 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 		err = c.Create(ctx, getSequentialTest("test-b", testNs))
 		require.NoError(t, err)
 		defer cleanupK8sObject(ctx, c, getSequentialTest("test-b", testNs))
-
-		// Create the ClusterTestSuite object and expect the Reconcile
-		suite := &testingv1alpha1.ClusterTestSuite{
-			ObjectMeta: metav1.ObjectMeta{Name: "suite-test-repeat"},
-			Spec: testingv1alpha1.TestSuiteSpec{
-				Concurrency: 1,
-				Count:       2,
-			},
-		}
-
-		err = c.Create(ctx, suite)
-		require.NoError(t, err)
-
-		defer cleanupK8sObject(ctx, c, suite)
-
 		// THEN
 		repeat.FuncAtMost(t, func() error {
 			return checkIfsuiteIsSucceeded(ctx, c, "suite-test-repeat")
@@ -129,6 +128,20 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 		require.NoError(t, err)
 		c := mgr.GetClient()
 
+		testNs := generateTestNs()
+		ctx := context.Background()
+
+		suite := &testingv1alpha1.ClusterTestSuite{
+			ObjectMeta: metav1.ObjectMeta{Name: "suite-test-concurrency"},
+			Spec: testingv1alpha1.TestSuiteSpec{
+				Concurrency: 3,
+				Count:       3,
+			},
+		}
+		err = c.Create(ctx, suite)
+		require.NoError(t, err)
+		defer cleanupK8sObject(ctx, c, suite)
+
 		require.NoError(t, add(mgr, newReconciler(mgr)))
 		stopMgr, mgrStopped := StartTestManager(t, mgr)
 
@@ -137,8 +150,6 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 			mgrStopped.Wait()
 		}()
 
-		testNs := generateTestNs()
-		ctx := context.Background()
 		logf.SetLogger(logf.ZapLogger(false))
 
 		podReconciler, err := startMockPodController(mgr, time.Millisecond*200)
@@ -162,20 +173,6 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 		require.NoError(t, err)
 		defer cleanupK8sObject(ctx, c, getConcurrentTest("test-conc-b", testNs))
 
-		// Create the ClusterTestSuite object and expect the Reconcile
-		suite := &testingv1alpha1.ClusterTestSuite{
-			ObjectMeta: metav1.ObjectMeta{Name: "suite-test-concurrency"},
-			Spec: testingv1alpha1.TestSuiteSpec{
-				Concurrency: 3,
-				Count:       3,
-			},
-		}
-
-		err = c.Create(ctx, suite)
-		require.NoError(t, err)
-
-		defer cleanupK8sObject(ctx, c, suite)
-
 		// THEN
 		repeat.FuncAtMost(t, func() error {
 			return checkIfsuiteIsSucceeded(ctx, c, "suite-test-concurrency")
@@ -195,6 +192,77 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 		assertThatPodsCreatedConcurrently(t, podReconciler.getAppliedChanges())
 	})
 
+	t.Run("high concurrency but no concurrent tests", func(t *testing.T) {
+		// GIVEN
+		// Setup the Manager and Controller
+		mgr, err := manager.New(cfg, manager.Options{})
+		require.NoError(t, err)
+		c := mgr.GetClient()
+
+		testNs := generateTestNs()
+		ctx := context.Background()
+
+		suite := &testingv1alpha1.ClusterTestSuite{
+			ObjectMeta: metav1.ObjectMeta{Name: "suite-test-sequential"},
+			Spec: testingv1alpha1.TestSuiteSpec{
+				Concurrency: 10,
+				Count:       1,
+			},
+		}
+		err = c.Create(ctx, suite)
+		require.NoError(t, err)
+		defer cleanupK8sObject(ctx, c, suite)
+
+		require.NoError(t, add(mgr, newReconciler(mgr)))
+		stopMgr, mgrStopped := StartTestManager(t, mgr)
+		defer func() {
+			close(stopMgr)
+			mgrStopped.Wait()
+		}()
+
+		logf.SetLogger(logf.ZapLogger(false))
+
+		podReconciler, err := startMockPodController(mgr, 0)
+		require.NoError(t, err)
+
+		// WHEN
+		ns := &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: testNs,
+			},
+		}
+		err = c.Create(ctx, ns)
+		require.NoError(t, err)
+		defer cleanupK8sObject(ctx, c, ns)
+
+		err = c.Create(ctx, getSequentialTest("test-a", testNs))
+		require.NoError(t, err)
+		defer cleanupK8sObject(ctx, c, getSequentialTest("test-a", testNs))
+
+		err = c.Create(ctx, getSequentialTest("test-b", testNs))
+		require.NoError(t, err)
+		defer cleanupK8sObject(ctx, c, getSequentialTest("test-b", testNs))
+
+		err = c.Create(ctx, getSequentialTest("test-c", testNs))
+		require.NoError(t, err)
+		defer cleanupK8sObject(ctx, c, getSequentialTest("test-c", testNs))
+
+		// THEN
+		repeat.FuncAtMost(t, func() error {
+			return checkIfsuiteIsSucceeded(ctx, c, "suite-test-sequential")
+		}, defaultAssertionTimeout)
+
+		repeat.FuncAtMost(t, func() error {
+			return checkIfPodsWereCreated(ctx, c, testNs, []string{
+				"oct-tp-suite-test-sequential-test-a-0",
+				"oct-tp-suite-test-sequential-test-b-0",
+				"oct-tp-suite-test-sequential-test-c-0"})
+		}, defaultAssertionTimeout)
+
+		assertThatPodsCreatedSequentially(t, podReconciler.getAppliedChanges())
+	})
+
+
 }
 
 func assertThatPodsCreatedConcurrently(t *testing.T, appliedChanges []podStatusChanges) {
@@ -213,6 +281,7 @@ func assertThatPodsCreatedConcurrently(t *testing.T, appliedChanges []podStatusC
 			break
 		}
 	}
+
 	assert.True(t, interchangedPodChanges)
 
 }
@@ -245,25 +314,6 @@ func checkIfsuiteIsSucceeded(ctx context.Context, reader client.Reader, suiteNam
 	if !succeeded {
 		return errors.New("suite should be succeeded")
 	}
-
-	trueCond := []testingv1alpha1.TestSuiteConditionType{}
-	for _, c := range actualSuite.Status.Conditions {
-		if c.Status == testingv1alpha1.StatusTrue {
-			trueCond = append(trueCond, c.Type)
-		}
-	}
-
-	var res string
-
-	for _, r := range actualSuite.Status.Results {
-		res += fmt.Sprintf("[name: %s, status: %s, ", r.Name, r.Status)
-		for _, e := range r.Executions {
-			res += "" + e.ID + "=" + string(e.PodPhase) + ", "
-		}
-		res += "]"
-	}
-	fmt.Printf("actualSuite [name: %s, cond: [%v], res: %s ]\n", actualSuite.Name, trueCond, res)
-
 	return nil
 }
 

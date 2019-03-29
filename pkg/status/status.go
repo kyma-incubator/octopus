@@ -111,7 +111,6 @@ func (s *Service) adjustSuiteCondition(stat v1alpha1.TestSuiteStatus) v1alpha1.T
 			anyRunning = true
 
 		case v1alpha1.TestUnknown:
-			fmt.Println("Is UNKNOWN")
 			anyUnknown = true
 
 		case v1alpha1.TestFailed:
@@ -157,11 +156,11 @@ func (s *Service) InitializeTests(suite v1alpha1.ClusterTestSuite, defs []v1alph
 	out.Results = make([]v1alpha1.TestResult, len(defs))
 	for idx, def := range defs {
 		out.Results[idx] = v1alpha1.TestResult{
-			Name:               def.Name,
-			Namespace:          def.Namespace,
-			Status:             v1alpha1.TestNotYetScheduled,
-			Executions:         make([]v1alpha1.TestExecution, 0),
-			DisableConcurrency: def.Spec.DisableConcurrency,
+			Name:                def.Name,
+			Namespace:           def.Namespace,
+			Status:              v1alpha1.TestNotYetScheduled,
+			Executions:          make([]v1alpha1.TestExecution, 0),
+			DisabledConcurrency: def.Spec.DisableConcurrency,
 		}
 	}
 

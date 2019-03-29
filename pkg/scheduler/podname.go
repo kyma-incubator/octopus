@@ -13,7 +13,7 @@ type PodNameGenerator struct{}
 
 func (P *PodNameGenerator) GetName(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDefinition) (string, error) {
 	// max length of k8s name is 253 characters
-	// TODO: add validation
+	// TODO (aszecowka): add validation https://github.com/kyma-incubator/octopus/issues/11
 	idx := -1
 	for _, tr := range suite.Status.Results {
 		if tr.Name == def.Name && tr.Namespace == def.Namespace {
