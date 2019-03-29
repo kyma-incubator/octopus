@@ -95,6 +95,8 @@ spec:
             results:
               items:
                 properties:
+                  disabledConcurrency:
+                    type: boolean
                   executions:
                     items:
                       properties:

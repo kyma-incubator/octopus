@@ -7,7 +7,6 @@ import (
 	"testing"
 )
 
-
 func TestRepeatStrategyGetConcurrently(t *testing.T) {
 	sut := repeatStrategy{}
 

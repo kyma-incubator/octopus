@@ -138,7 +138,7 @@ type TestResult struct {
 	Namespace           string          `json:"namespace"`
 	Status              TestStatus      `json:"status"`
 	Executions          []TestExecution `json:"executions"`
-	DisabledConcurrency bool            `json:"disable_concurrency,omitempty"`
+	DisabledConcurrency bool            `json:"disabledConcurrency,omitempty"`
 }
 
 // TestExecution provides status for given test execution

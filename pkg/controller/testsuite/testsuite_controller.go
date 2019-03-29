@@ -17,7 +17,6 @@ package testsuite
 
 import (
 	"context"
-	"fmt"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"time"
@@ -111,7 +110,7 @@ type ReconcileTestSuite struct {
 const (
 	requeueAfterNoChanges = time.Second * 5
 	requeueAfterChanges   = time.Second * 1
-	throttleTime          = time.Millisecond * 200
+	throttleTime          = time.Millisecond * 500
 )
 
 // Reconcile reads that state of the cluster for a ClusterTestSuite object and makes changes based on the state read
@@ -188,13 +187,12 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 }
 
 func (r *ReconcileTestSuite) throttleIfNeeded() {
-	// TODO
 	select {
 	case prev := <-r.prevReconcile:
 		elapsed := time.Now().Sub(prev)
 		toThrottle := throttleTime - elapsed
 		if toThrottle > 0 {
-			fmt.Println("Sleep for ", toThrottle)
+			r.log.V(20).Info("Throttle controller", "throttle", toThrottle)
 			<-time.After(toThrottle)
 		}
 	default:
