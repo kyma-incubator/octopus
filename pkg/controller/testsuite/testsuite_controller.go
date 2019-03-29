@@ -82,7 +82,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		IsController: true,
 		OwnerType:    &testingv1alpha1.ClusterTestSuite{},
 	}, predicate.Funcs{CreateFunc: func(event event.CreateEvent) bool {
-		// TODO not tested
 		return false
 	}})
 

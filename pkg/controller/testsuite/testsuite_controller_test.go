@@ -374,13 +374,14 @@ func (r *mockPodReconciler) Reconcile(request reconcile.Request) (reconcile.Resu
 		if err := r.cli.Status().Update(ctx, pod); err != nil {
 			return reconcile.Result{}, err
 		}
-		r.appliedChanges = append(r.appliedChanges, podStatusChanges{podName: pod.Name, phase: pod.Status.Phase, ts: time.Now()})
+		r.appliedChanges = append(r.appliedChanges, podStatusChanges{podName: pod.Name, phase: pod.Status.Phase})
 		return reconcile.Result{RequeueAfter: r.reconcileAfter}, nil
 	}
 	if pod.Status.Phase == v1.PodRunning {
 		canMoveToNextPhase := false
 		for idx, ch := range r.appliedChanges {
 			if ch.podName == pod.Name && ch.phase == v1.PodRunning {
+				// We allow to finish Pod only when other pods were started
 				if idx <= len(r.appliedChanges)-r.enforceNumberOfConcurrentlyRunningPods {
 					canMoveToNextPhase = true
 					break
@@ -394,7 +395,7 @@ func (r *mockPodReconciler) Reconcile(request reconcile.Request) (reconcile.Resu
 			if err != nil {
 				return reconcile.Result{}, err
 			}
-			r.appliedChanges = append(r.appliedChanges, podStatusChanges{podName: pod.Name, phase: pod.Status.Phase, ts: time.Now()})
+			r.appliedChanges = append(r.appliedChanges, podStatusChanges{podName: pod.Name, phase: pod.Status.Phase})
 			return reconcile.Result{Requeue: false}, nil
 		}
 		return reconcile.Result{Requeue: true, RequeueAfter: r.reconcileAfter}, nil
@@ -440,7 +441,6 @@ func startMockPodController(mgr manager.Manager, enforceConcurrentlyRunningPods 
 type podStatusChanges struct {
 	podName string
 	phase   v1.PodPhase
-	ts      time.Time
 }
 
 func getConcurrentTest(testName, ns string) *testingv1alpha1.TestDefinition {
