@@ -49,6 +49,7 @@ import (
 const defaultAssertionTimeout = time.Second * 20
 
 func TestReconcileClusterTestSuite(t *testing.T) {
+	// TODO aszecowka (later) add tests for error handling
 
 	t.Run("repeat, no concurrency", func(t *testing.T) {
 		// GIVEN
@@ -152,7 +153,7 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 
 		logf.SetLogger(logf.ZapLogger(false))
 
-		podReconciler, err := startMockPodController(mgr, time.Millisecond*200)
+		podReconciler, err := startMockPodController(mgr, 2)
 		require.NoError(t, err)
 
 		// WHEN
@@ -262,7 +263,6 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 		assertThatPodsCreatedSequentially(t, podReconciler.getAppliedChanges())
 	})
 
-
 }
 
 func assertThatPodsCreatedConcurrently(t *testing.T, appliedChanges []podStatusChanges) {
@@ -352,8 +352,9 @@ type mockPodReconciler struct {
 	// mutex protecting access to applied changes slice
 	mtx sync.Mutex
 	// chronologically list of pod changes. Use getter to access it autside the struct
-	appliedChanges []podStatusChanges
-	finishPodAfter time.Duration
+	appliedChanges                         []podStatusChanges
+	enforceNumberOfConcurrentlyRunningPods int
+	reconcileAfter                         time.Duration
 }
 
 func (r *mockPodReconciler) Reconcile(request reconcile.Request) (reconcile.Result, error) {
@@ -374,29 +375,30 @@ func (r *mockPodReconciler) Reconcile(request reconcile.Request) (reconcile.Resu
 			return reconcile.Result{}, err
 		}
 		r.appliedChanges = append(r.appliedChanges, podStatusChanges{podName: pod.Name, phase: pod.Status.Phase, ts: time.Now()})
-		return reconcile.Result{RequeueAfter: r.finishPodAfter}, nil
+		return reconcile.Result{RequeueAfter: r.reconcileAfter}, nil
 	}
 	if pod.Status.Phase == v1.PodRunning {
-		var runningSince time.Time
-		for _, ch := range r.appliedChanges {
+		canMoveToNextPhase := false
+		for idx, ch := range r.appliedChanges {
 			if ch.podName == pod.Name && ch.phase == v1.PodRunning {
-				runningSince = ch.ts
+				if idx <= len(r.appliedChanges)-r.enforceNumberOfConcurrentlyRunningPods {
+					canMoveToNextPhase = true
+					break
+				}
 			}
 		}
-		now := time.Now()
-		whenShouldFinishPod := runningSince.Add(r.finishPodAfter)
+		if canMoveToNextPhase {
+			pod.Status.Phase = v1.PodSucceeded
+			r.getLogger().Info("pod succeeded", "podName", pod.Name)
+			err := r.cli.Status().Update(ctx, pod)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+			r.appliedChanges = append(r.appliedChanges, podStatusChanges{podName: pod.Name, phase: pod.Status.Phase, ts: time.Now()})
+			return reconcile.Result{Requeue: false}, nil
+		}
+		return reconcile.Result{Requeue: true, RequeueAfter: r.reconcileAfter}, nil
 
-		if now.Before(whenShouldFinishPod) {
-			return reconcile.Result{RequeueAfter: whenShouldFinishPod.Sub(now)}, nil
-		}
-		pod.Status.Phase = v1.PodSucceeded
-		r.getLogger().Info("pod succeeded", "podName", pod.Name)
-		err := r.cli.Status().Update(ctx, pod)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		r.appliedChanges = append(r.appliedChanges, podStatusChanges{podName: pod.Name, phase: pod.Status.Phase, ts: time.Now()})
-		return reconcile.Result{}, nil
 	}
 	return reconcile.Result{}, nil
 }
@@ -411,11 +413,12 @@ func (r *mockPodReconciler) getLogger() logr.Logger {
 	return logf.Log.WithName("mock pod controller")
 }
 
-func startMockPodController(mgr manager.Manager, finishPodAfter time.Duration) (*mockPodReconciler, error) {
+func startMockPodController(mgr manager.Manager, enforceConcurrentlyRunningPods int) (*mockPodReconciler, error) {
 	pr := &mockPodReconciler{
-		cli:            mgr.GetClient(),
-		mtx:            sync.Mutex{},
-		finishPodAfter: finishPodAfter,
+		cli: mgr.GetClient(),
+		mtx: sync.Mutex{},
+		enforceNumberOfConcurrentlyRunningPods: enforceConcurrentlyRunningPods,
+		reconcileAfter:                         time.Millisecond * 100,
 	}
 	c, err := controller.New("pod-controller", mgr, controller.Options{Reconciler: pr})
 	if err != nil {

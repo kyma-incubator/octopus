@@ -639,6 +639,73 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 			},
 		}, *stat)
 	})
+
+	t.Run("suite is running if all already scheduled pods are finished but new one are not created yet", func(t *testing.T) {
+		sut := status.NewService(mockNowProvider())
+		suite := v1alpha1.ClusterTestSuite{
+			ObjectMeta: v1.ObjectMeta{
+				Name: "test-all",
+			},
+			Spec: v1alpha1.TestSuiteSpec{
+				Count: 10,
+			},
+			Status: v1alpha1.TestSuiteStatus{
+				Conditions: []v1alpha1.TestSuiteCondition{
+					{
+						Type:   v1alpha1.SuiteRunning,
+						Status: v1alpha1.StatusTrue,
+					},
+				},
+				Results: []v1alpha1.TestResult{
+					{
+						Name:      "test-a",
+						Namespace: "default",
+						Status:    v1alpha1.TestRunning,
+						Executions: []v1alpha1.TestExecution{
+							{
+								ID:        "octopus-testing-pod-123",
+								StartTime: &v1.Time{Time: getTimeInPast()},
+								PodPhase:  v12.PodRunning,
+							},
+						},
+					},
+				},
+			},
+		}
+		// WHEN
+		stat, err := sut.EnsureStatusIsUpToDate(suite, []v12.Pod{
+			getPodAInStatus(v12.PodStatus{
+				Phase: v12.PodSucceeded,
+			}),
+		})
+		// THEN
+		require.NoError(t, err)
+		require.NotNil(t, stat)
+		assert.Equal(t, v1alpha1.TestSuiteStatus{
+			Conditions: []v1alpha1.TestSuiteCondition{
+				{
+					Type:   v1alpha1.SuiteRunning,
+					Status: v1alpha1.StatusTrue,
+				},
+			},
+			Results: []v1alpha1.TestResult{
+				{
+					Name:      "test-a",
+					Namespace: "default",
+					Status:    v1alpha1.TestRunning,
+					Executions: []v1alpha1.TestExecution{
+						{
+							ID:             "octopus-testing-pod-123",
+							PodPhase:       v12.PodSucceeded,
+							StartTime:      &v1.Time{Time: getTimeInPast()},
+							CompletionTime: &v1.Time{Time: getStartTime()},
+						},
+					},
+				},
+			},
+		}, *stat)
+	})
+
 }
 
 func TestMarkAsScheduled(t *testing.T) {

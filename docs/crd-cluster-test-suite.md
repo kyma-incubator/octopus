@@ -31,9 +31,9 @@ This table lists all the possible parameters of a given resource together with t
 | **spec.selectors** | **NO** | Defines which tests should be executed. You can define tests by specifying their names or labels. Selectors are additive. If not defined, all tests from all Namespaces are executed.
 | **spec.selectors.matchNames** | **NO** | Lists TestDefinitions to execute. For every element on the list, specify **name** and **namespace** that refers to a TestDefinition. This feature is not yet implemented. |
 | **spec.selectors.matchLabels** | **NO** | Lists labels that match labels of TestDefinitions to execute. A TestDefinition is selected if at least one label matches. This feature is not yet implemented. | 
-| **spec.concurrency** | **NO** | Defines how many tests can be executed at the same time, which depends on cluster size and its load. The default value is `1`. This feature is not yet implemented. 
+| **spec.concurrency** | **NO** | Defines how many tests can be executed at the same time, which depends on cluster size and its load. The default value is `1`.
 | **spec.suiteTimeout** | **NO** | Defines the maximal suite duration after which test executions are interrupted and marked as **Failed**. The default value is one hour. This feature is not yet implemented. 
-| **spec.count** | **NO** | Defines how many times every test should be executed. **Spec.Count** and **Spec.MaxRetries** are mutually exclusive. The default value is `1`. This feature is not yet implemented. 
+| **spec.count** | **NO** | Defines how many times every test should be executed. **Spec.Count** and **Spec.MaxRetries** are mutually exclusive. The default value is `1`.  
 | **spec.maxRetries** | **NO** | Defines how many times a given test is retried in case of its failure. A suite is marked as a **Succeeded** even if some test failed and then finally succeeded. The default value is `0`, which means that there are no retries of a given test. This feature is not yet implemented. 
 
 ## Custom resource status
