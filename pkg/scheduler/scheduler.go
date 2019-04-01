@@ -125,9 +125,9 @@ func (s *Service) normalizeSuite(suite v1alpha1.ClusterTestSuite) v1alpha1.Clust
 func (s *Service) getStrategyForSuite(suite v1alpha1.ClusterTestSuite) nextTestSelectorStrategy {
 	if suite.Spec.MaxRetries == 0 {
 		return &repeatStrategy{}
+	} else {
+		return &retryStrategy{}
 	}
-	// TODO (aszecowka) https://github.com/kyma-incubator/octopus/issues/8
-	return nil
 
 }
 

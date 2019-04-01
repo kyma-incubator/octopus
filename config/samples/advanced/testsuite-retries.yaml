@@ -1,0 +1,11 @@
+---
+
+apiVersion: testing.kyma-project.io/v1alpha1
+kind: ClusterTestSuite
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: testsuite-all
+spec:
+  maxRetries: 2
+  concurrency: 1

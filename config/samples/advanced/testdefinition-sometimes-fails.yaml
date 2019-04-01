@@ -1,0 +1,25 @@
+---
+apiVersion: testing.kyma-project.io/v1alpha1
+kind: TestDefinition
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+    dependency/kubeless: "true"
+    component/service-catalog: "true" # user has a freedom how to define labels
+  name: test-ls
+spec:
+  skip: n
+  disableConcurrency: n
+  timeout: 3m
+  template:
+    spec:
+      containers:
+        - name: test
+          image: alpine:latest
+          command:
+            - "/bin/sh"
+            - "-ecx"
+            - |
+              currDate=$(date +%s)
+              rnd=$((currDate%2))
+              exit ${rnd}
