@@ -17,14 +17,15 @@ package testsuite
 
 import (
 	"fmt"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sync"
-	"testing"
-	"time"
 
 	"github.com/pkg/errors"
 

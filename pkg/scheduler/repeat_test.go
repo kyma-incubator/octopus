@@ -1,10 +1,11 @@
 package scheduler
 
 import (
+	"testing"
+
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestRepeatStrategyGetConcurrently(t *testing.T) {

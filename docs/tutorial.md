@@ -1,6 +1,6 @@
 # Tutorial
 
-Follow this tutorial to create `TestDefinition` and `ClusterTestSuite` CRDs, and to see Octopus in action.
+Follow this tutorial to create `TestDefinition` and `ClusterTestSuite` CRs, and to see Octopus in action.
 
 1. Prepare a Kubernetes cluster and ensure that `kubectl` is properly configured by setting a `KUBECONFIG` environment variable. 
 1. Clone the Octopus directory to your `$GOPATH`:
@@ -9,6 +9,11 @@ cd $GOPATH/src
 mkdir -p github.com/kyma-incubator/
 cd github.com/kyma-incubator/
 git clone https://github.com/kyma-incubator/octopus.git
+```
+
+2. Install Custom Resource Definitions in the cluster:
+```bash
+kubectl apply -f config/crds
 ```
 3. Create `TestDefinition` and `ClusterTestSuite` CRDs:
 

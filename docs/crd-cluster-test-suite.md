@@ -6,6 +6,7 @@ To get the up-to-date CRD and show the output in the `yaml` format, run this com
 ```
 kubectl get crd clustertestsuites.testing.kyma-project.io -o yaml
 ```
+`ClusterTestSuite` objects are immutable. 
 
 ## Sample custom resource
 

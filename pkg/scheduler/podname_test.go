@@ -1,12 +1,15 @@
 package scheduler_test
 
 import (
+	"k8s.io/apimachinery/pkg/util/rand"
+	"strings"
+	"testing"
+
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 	"github.com/kyma-incubator/octopus/pkg/scheduler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 func TestPodNameGenerator(t *testing.T) {
@@ -84,6 +87,29 @@ func TestPodNameGenerator(t *testing.T) {
 		_, err := sut.GetName(suite, getTestDefinitionA())
 		// THEN
 		require.Error(t, err)
+	})
+
+	t.Run("returns error when name is too long", func(t *testing.T) {
+		// GIVEN
+		suite := v1alpha1.ClusterTestSuite{
+			ObjectMeta: v1.ObjectMeta{
+				Name: rand.String(300),
+			},
+			Status: v1alpha1.TestSuiteStatus{
+				Results: []v1alpha1.TestResult{
+					{
+						Name:      "test-a",
+						Namespace: "default",
+					},
+				},
+			},
+		}
+
+		// WHEN
+		_, err := sut.GetName(suite, getTestDefinitionA())
+		// THEN
+		require.Error(t, err)
+		assert.True(t, strings.HasPrefix(err.Error(), "generated pod name is too long"))
 	})
 
 }

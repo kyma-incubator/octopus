@@ -17,9 +17,10 @@ package testsuite
 
 import (
 	"context"
+	"time"
+
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"time"
 
 	"github.com/go-logr/logr"
 	testingv1alpha1 "github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
@@ -188,11 +189,10 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 func (r *ReconcileTestSuite) throttleIfNeeded() {
 	select {
 	case prev := <-r.prevReconcile:
-		elapsed := time.Now().Sub(prev)
+		elapsed := time.Since(prev)
 		toThrottle := throttleTime - elapsed
 		if toThrottle > 0 {
-			r.log.V(20).Info("Throttle controller", "throttle", toThrottle)
-			<-time.After(toThrottle)
+			time.Sleep(toThrottle)
 		}
 	default:
 	}

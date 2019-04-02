@@ -3,8 +3,9 @@ package scheduler_test
 import (
 	"context"
 	"fmt"
-	rlog "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"testing"
+
+	rlog "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 	"github.com/kyma-incubator/octopus/pkg/scheduler"
@@ -92,7 +93,7 @@ func TestTryScheduleErrorOnGettingNextTest(t *testing.T) {
 
 	mockStatusProvider.On("GetExecutionsInProgress", suite).Return(nil)
 	mockLogger.ExpectLoggedWithValues("suite", "test-all")
-	mockLogger.ExpectLoggedOnError(fmt.Errorf("cannot find test selector strategy that is applicable for suite [test-all]"), "No applicable strategy")
+	mockLogger.ExpectLoggedOnError(errors.New("cannot find test selector strategy that is applicable for suite [test-all]"), "No applicable strategy")
 
 	sut := scheduler.NewService(mockStatusProvider, nil, nil, nil, mockLogger)
 	// WHEN

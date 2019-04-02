@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-logr/logr"
-
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
@@ -112,6 +111,7 @@ func (s *Service) getNextToSchedule(suite v1alpha1.ClusterTestSuite) (*v1alpha1.
 	return nil, nil
 }
 
+// TODO this is only workaround, proper implementation will be done here: https://github.com/kyma-incubator/octopus/issues/11
 func (s *Service) normalizeSuite(suite v1alpha1.ClusterTestSuite) v1alpha1.ClusterTestSuite {
 	if suite.Spec.Concurrency == 0 {
 		suite.Spec.Concurrency = 1

@@ -8,8 +8,8 @@ metadata:
     component/service-catalog: "true" # user has a freedom how to define labels
   name: test-sequnetial
 spec:
-  skip: n
-  disableConcurrency: y
+  skip: false
+  disableConcurrency: true
   timeout: 3m
   template:
     spec:
