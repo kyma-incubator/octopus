@@ -13,12 +13,12 @@ git clone https://github.com/kyma-incubator/octopus.git
 
 2. Install Custom Resource Definitions in the cluster:
 ```bash
+cd octopus
 kubectl apply -f config/crds
 ```
-3. Create `TestDefinition` and `ClusterTestSuite` CRDs:
+3. Create `TestDefinition` and `ClusterTestSuite` CRs:
 
 ```bash
-cd octopus
 kubectl apply -f config/samples/testdefinition.yaml
 kubectl apply -f config/samples/testsuite.yaml
 
