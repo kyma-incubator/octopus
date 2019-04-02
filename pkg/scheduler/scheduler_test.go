@@ -93,7 +93,7 @@ func TestTryScheduleErrorOnGettingNextTest(t *testing.T) {
 
 	mockStatusProvider.On("GetExecutionsInProgress", suite).Return(nil)
 	mockLogger.ExpectLoggedWithValues("suite", "test-all")
-	mockLogger.ExpectLoggedOnError(errors.New("cannot find test selector strategy that is applicable for suite [test-all]"), "No applicable strategy")
+	mockLogger.ExpectLoggedOnError(fmt.Errorf("cannot find test selector strategy that is applicable for suite [test-all]"), "No applicable strategy")
 
 	sut := scheduler.NewService(mockStatusProvider, nil, nil, nil, mockLogger)
 	// WHEN
