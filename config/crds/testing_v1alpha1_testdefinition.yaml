@@ -30,6 +30,10 @@ spec:
           type: object
         spec:
           properties:
+            disableConcurrency:
+              description: If test is working on data that can be modified by another
+                test, I would like to run it in separation. Default value is false
+              type: boolean
             skip:
               description: If there are some problems with given test, we add possibility
                 to don't execute them. On Testsuite level such test should be marked

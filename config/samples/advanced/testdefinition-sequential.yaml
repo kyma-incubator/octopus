@@ -6,10 +6,10 @@ metadata:
     controller-tools.k8s.io: "1.0"
     dependency/kubeless: "true"
     component/service-catalog: "true" # user has a freedom how to define labels
-  name: test-example
+  name: test-sequnetial
 spec:
   skip: false
-  disableConcurrency: false
+  disableConcurrency: true
   timeout: 3m
   template:
     spec:
@@ -17,4 +17,4 @@ spec:
         - name: test
           image: alpine:latest
           command:
-            - "pwd"
+            - "date"

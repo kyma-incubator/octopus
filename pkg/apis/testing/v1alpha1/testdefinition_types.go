@@ -54,7 +54,7 @@ type TestDefinitionSpec struct {
 	// If test is working on data that can be modified by another test,
 	// I would like to run it in separation.
 	// Default value is false
-	DisableConcurrency bool `json:"disable_concurrency,omitempty"`
+	DisableConcurrency bool `json:"disableConcurrency,omitempty"`
 	// Test should be interrupted after the timeout.
 	// On test suite level such test should be marked as a timeouted.
 	// No default value.

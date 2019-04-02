@@ -64,24 +64,33 @@ func (s *Service) calculateTestStatus(tr v1alpha1.TestResult, maxRetries, count 
 	if len(tr.Executions) == 0 {
 		return v1alpha1.TestNotYetScheduled
 	}
-	// TODO(aszecowka): https://github.com/kyma-incubator/octopus/issues/8
-	if len(tr.Executions) > 1 {
+
+	// TODO handle maxRetries https://github.com/kyma-incubator/octopus/issues/8
+	if maxRetries > 0 {
 		return v1alpha1.TestUnknown
 	}
 
+	if len(tr.Executions) < int(count) {
+		return v1alpha1.TestRunning
+	}
+
+	var anyFailed bool
 	for _, exec := range tr.Executions {
 		switch exec.PodPhase {
 		case v1.PodPending:
 			return v1alpha1.TestRunning
-		case v1.PodFailed:
-			return v1alpha1.TestFailed
 		case v1.PodRunning:
 			return v1alpha1.TestRunning
-		case v1.PodSucceeded:
-			return v1alpha1.TestSucceeded
+		case v1.PodFailed:
+			anyFailed = true
+		case v1.PodUnknown:
+			return v1alpha1.TestRunning
 		}
 	}
-	return v1alpha1.TestUnknown
+	if anyFailed {
+		return v1alpha1.TestFailed
+	}
+	return v1alpha1.TestSucceeded
 
 }
 
@@ -147,10 +156,11 @@ func (s *Service) InitializeTests(suite v1alpha1.ClusterTestSuite, defs []v1alph
 	out.Results = make([]v1alpha1.TestResult, len(defs))
 	for idx, def := range defs {
 		out.Results[idx] = v1alpha1.TestResult{
-			Name:       def.Name,
-			Namespace:  def.Namespace,
-			Status:     v1alpha1.TestNotYetScheduled,
-			Executions: make([]v1alpha1.TestExecution, 0),
+			Name:                def.Name,
+			Namespace:           def.Namespace,
+			Status:              v1alpha1.TestNotYetScheduled,
+			Executions:          make([]v1alpha1.TestExecution, 0),
+			DisabledConcurrency: def.Spec.DisableConcurrency,
 		}
 	}
 
@@ -219,15 +229,16 @@ func (s *Service) getSuiteCondition(stat v1alpha1.TestSuiteStatus) v1alpha1.Test
 	return v1alpha1.SuiteUninitialized
 }
 
-func (s *Service) GetNextToSchedule(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult {
-	// TODO(aszecowka) https://github.com/kyma-incubator/octopus/issues/9 and https://github.com/kyma-incubator/octopus/issues/8
+func (s *Service) GetExecutionsInProgress(suite v1alpha1.ClusterTestSuite) []v1alpha1.TestExecution {
+	out := make([]v1alpha1.TestExecution, 0)
 	for _, tr := range suite.Status.Results {
-		if len(tr.Executions) == 0 {
-			return &tr
+		for _, ex := range tr.Executions {
+			if ex.PodPhase == v1.PodPending || ex.PodPhase == v1.PodRunning {
+				out = append(out, ex)
+			}
 		}
 	}
-	return nil
-
+	return out
 }
 
 func (s *Service) MarkAsScheduled(status v1alpha1.TestSuiteStatus, testName, testNs, podName string) (v1alpha1.TestSuiteStatus, error) {

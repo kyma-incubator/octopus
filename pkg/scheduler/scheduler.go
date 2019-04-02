@@ -2,7 +2,8 @@ package scheduler
 
 import (
 	"context"
-
+	"fmt"
+	"github.com/go-logr/logr"
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
@@ -12,22 +13,29 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-const (
-	TestingPodGeneratedName = "octopus-testing-pod-"
-)
-
 //go:generate go run ./../../vendor/github.com/vektra/mockery/cmd/mockery/mockery.go -name=StatusProvider -output=automock -outpkg=automock -case=underscore
 type StatusProvider interface {
-	GetNextToSchedule(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult
 	MarkAsScheduled(status v1alpha1.TestSuiteStatus, testName, testNs, podName string) (v1alpha1.TestSuiteStatus, error)
+	GetExecutionsInProgress(suite v1alpha1.ClusterTestSuite) []v1alpha1.TestExecution
 }
 
-func NewService(statusProvider StatusProvider, reader client.Reader, writer client.Writer, scheme *runtime.Scheme) *Service {
+// nextTestSelectorStrategy
+type nextTestSelectorStrategy interface {
+	GetTestToRunConcurrently(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult
+	GetTestToRunSequentially(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult
+}
+
+type podNameProvider interface {
+	GetName(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDefinition) (string, error)
+}
+
+func NewService(statusProvider StatusProvider, reader client.Reader, writer client.Writer, scheme *runtime.Scheme, logger logr.Logger) *Service {
 	return &Service{
 		statusProvider: statusProvider,
 		reader:         reader,
 		writer:         writer,
 		scheme:         scheme,
+		log:            logger,
 	}
 }
 
@@ -36,10 +44,14 @@ type Service struct {
 	reader         client.Reader
 	writer         client.Writer
 	scheme         *runtime.Scheme
+	log            logr.Logger
 }
 
 func (s *Service) TrySchedule(suite v1alpha1.ClusterTestSuite) (*v1.Pod, *v1alpha1.TestSuiteStatus, error) {
-	tr := s.statusProvider.GetNextToSchedule(suite)
+	tr, err := s.getNextToSchedule(suite)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "while getting next to schedule")
+	}
 	if tr == nil {
 		return nil, nil, nil
 	}
@@ -54,7 +66,7 @@ func (s *Service) TrySchedule(suite v1alpha1.ClusterTestSuite) (*v1.Pod, *v1alph
 
 	curr, err := s.statusProvider.MarkAsScheduled(suite.Status, tr.Name, tr.Namespace, pod.Name)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "while scheduling suite [%s]", suite.Name)
+		return nil, nil, errors.Wrapf(err, "while marking suite [%s] as Scheduled", suite.Name)
 	}
 	return pod, &curr, nil
 }
@@ -63,9 +75,64 @@ func (s *Service) getDefinition(name, ns string) (v1alpha1.TestDefinition, error
 	var out v1alpha1.TestDefinition
 	err := s.reader.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: ns}, &out)
 	if err != nil {
-		return v1alpha1.TestDefinition{}, errors.Wrapf(err, "while getting test fetcher [name: %s, namespace: %s]", name, ns)
+		return v1alpha1.TestDefinition{}, errors.Wrapf(err, "while getting test definition [name: %s, namespace: %s]", name, ns)
 	}
 	return out, nil
+}
+
+func (s *Service) getNextToSchedule(suite v1alpha1.ClusterTestSuite) (*v1alpha1.TestResult, error) {
+	suite = s.normalizeSuite(suite)
+	running := s.statusProvider.GetExecutionsInProgress(suite)
+
+	logSuite := s.log.WithValues("suite", suite.Name)
+	if len(running) >= int(suite.Spec.Concurrency) {
+		logSuite.Info("Cannot get next test to schedule, max concurrency reached", "running", len(running), "concurrency", suite.Spec.Concurrency)
+		return nil, nil
+	}
+
+	strategy := s.getStrategyForSuite(suite)
+	if strategy == nil {
+		err := fmt.Errorf("cannot find test selector strategy that is applicable for suite [%s]", suite.Name)
+		logSuite.Error(err, "No applicable strategy")
+		return nil, err
+	}
+
+	if toRunCandidate := strategy.GetTestToRunConcurrently(suite); toRunCandidate != nil {
+		return toRunCandidate, nil
+	}
+
+	if len(running) == 0 {
+		if toRunCandidate := strategy.GetTestToRunSequentially(suite); toRunCandidate != nil {
+			return toRunCandidate, nil
+		}
+	}
+
+	logSuite.Info("No tests to execute right now")
+	return nil, nil
+}
+
+// TODO this is only workaround, proper implementation will be done here: https://github.com/kyma-incubator/octopus/issues/11
+func (s *Service) normalizeSuite(suite v1alpha1.ClusterTestSuite) v1alpha1.ClusterTestSuite {
+	if suite.Spec.Concurrency == 0 {
+		suite.Spec.Concurrency = 1
+	}
+	if suite.Spec.Count == 0 {
+		suite.Spec.Count = 1
+	}
+	return suite
+}
+
+func (s *Service) getStrategyForSuite(suite v1alpha1.ClusterTestSuite) nextTestSelectorStrategy {
+	if suite.Spec.MaxRetries == 0 {
+		return &repeatStrategy{}
+	}
+	// TODO (aszecowka) https://github.com/kyma-incubator/octopus/issues/8
+	return nil
+
+}
+
+func (s *Service) getNameProvider() podNameProvider {
+	return &PodNameGenerator{}
 }
 
 func (s *Service) startPod(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDefinition) (*v1.Pod, error) {
@@ -75,7 +142,11 @@ func (s *Service) startPod(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDef
 	p.Labels = def.Spec.Template.Labels
 	p.Annotations = def.Spec.Template.Annotations
 
-	p.GenerateName = TestingPodGeneratedName
+	name, err := s.getNameProvider().GetName(suite, def)
+	if err != nil {
+		return nil, err
+	}
+	p.Name = name
 	p.Namespace = def.Namespace
 
 	if p.Labels == nil {
@@ -90,9 +161,9 @@ func (s *Service) startPod(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDef
 		return nil, errors.Wrapf(err, "while setting controller reference, suite [%s], pod [name %s, namespace: %s]", suite.Name, p.Name, p.Namespace)
 	}
 
-	err := s.writer.Create(context.TODO(), p)
+	err = s.writer.Create(context.TODO(), p)
 	if err != nil {
-		return nil, errors.Wrapf(err, "while creating testing pod for suite [%s] and test fetcher [name: %s, namespace: %s]", suite.Name, def.Name, def.Namespace)
+		return nil, errors.Wrapf(err, "while creating testing pod for suite [%s] and test definition [name: %s, namespace: %s]", suite.Name, def.Name, def.Namespace)
 	}
 	return p, nil
 }
