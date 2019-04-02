@@ -5,7 +5,7 @@ kind: ClusterTestSuite
 metadata:
   labels:
     controller-tools.k8s.io: "1.0"
-  name: testsuite-all
+  name: testsuite-retries
 spec:
-  maxRetries: 2
+  maxRetries: 10
   concurrency: 1
