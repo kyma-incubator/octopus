@@ -1,6 +1,7 @@
 package status_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -262,12 +263,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 		// WHEN
 		suite := v1alpha1.ClusterTestSuite{
 			Status: v1alpha1.TestSuiteStatus{
-				Conditions: []v1alpha1.TestSuiteCondition{
-					{
-						Type:   v1alpha1.SuiteRunning,
-						Status: v1alpha1.StatusTrue,
-					},
-				},
+				Conditions: conditionSuiteRunning(),
 				Results: []v1alpha1.TestResult{
 					{
 						Name:      "test-name",
@@ -293,12 +289,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 				Name: "test-all",
 			},
 			Status: v1alpha1.TestSuiteStatus{
-				Conditions: []v1alpha1.TestSuiteCondition{
-					{
-						Type:   v1alpha1.SuiteRunning,
-						Status: v1alpha1.StatusTrue,
-					},
-				},
+				Conditions: conditionSuiteRunning(),
 				Results: []v1alpha1.TestResult{
 					{
 						Name:      "test-a",
@@ -306,7 +297,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 						Status:    v1alpha1.TestRunning,
 						Executions: []v1alpha1.TestExecution{
 							{
-								ID:        "octopus-testing-pod-123",
+								ID:        getPodNameForTestA(0),
 								StartTime: &v1.Time{Time: getStartTime()},
 							},
 						},
@@ -316,7 +307,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 		}
 		// WHEN
 		stat, err := sut.EnsureStatusIsUpToDate(suite, []v12.Pod{
-			getPodAInStatus(
+			getTestPodAInStatus(0,
 				v12.PodStatus{
 					Phase: v12.PodRunning,
 				}),
@@ -325,12 +316,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, stat)
 		assert.Equal(t, v1alpha1.TestSuiteStatus{
-			Conditions: []v1alpha1.TestSuiteCondition{
-				{
-					Type:   v1alpha1.SuiteRunning,
-					Status: v1alpha1.StatusTrue,
-				},
-			},
+			Conditions: conditionSuiteRunning(),
 			Results: []v1alpha1.TestResult{
 				{
 					Name:      "test-a",
@@ -338,7 +324,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 					Status:    v1alpha1.TestRunning,
 					Executions: []v1alpha1.TestExecution{
 						{
-							ID:        "octopus-testing-pod-123",
+							ID:        getPodNameForTestA(0),
 							PodPhase:  v12.PodRunning,
 							StartTime: &v1.Time{Time: getStartTime()},
 						},
@@ -355,12 +341,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 				Name: "test-all",
 			},
 			Status: v1alpha1.TestSuiteStatus{
-				Conditions: []v1alpha1.TestSuiteCondition{
-					{
-						Type:   v1alpha1.SuiteRunning,
-						Status: v1alpha1.StatusTrue,
-					},
-				},
+				Conditions: conditionSuiteRunning(),
 				Results: []v1alpha1.TestResult{
 					{
 						Name:      "test-a",
@@ -368,7 +349,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 						Status:    v1alpha1.TestRunning,
 						Executions: []v1alpha1.TestExecution{
 							{
-								ID:        "octopus-testing-pod-123",
+								ID:        getPodNameForTestA(0),
 								StartTime: &v1.Time{Time: getTimeInPast()},
 								PodPhase:  v12.PodRunning,
 							},
@@ -380,7 +361,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 						Status:    v1alpha1.TestRunning,
 						Executions: []v1alpha1.TestExecution{
 							{
-								ID:        "octopus-testing-pod-456",
+								ID:        getPodNameForTestB(0),
 								StartTime: &v1.Time{Time: getTimeInPast()},
 								PodPhase:  v12.PodRunning,
 							},
@@ -391,10 +372,10 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 		}
 		// WHEN
 		stat, err := sut.EnsureStatusIsUpToDate(suite, []v12.Pod{
-			getPodAInStatus(v12.PodStatus{
+			getTestPodAInStatus(0, v12.PodStatus{
 				Phase: v12.PodRunning,
 			}),
-			getPodBInStatus(v12.PodStatus{
+			getTestPodBInStatus(0, v12.PodStatus{
 				Phase:   v12.PodFailed,
 				Reason:  "failedReason",
 				Message: "failedMessage",
@@ -404,12 +385,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, stat)
 		assert.Equal(t, v1alpha1.TestSuiteStatus{
-			Conditions: []v1alpha1.TestSuiteCondition{
-				{
-					Type:   v1alpha1.SuiteRunning,
-					Status: v1alpha1.StatusTrue,
-				},
-			},
+			Conditions: conditionSuiteRunning(),
 			Results: []v1alpha1.TestResult{
 				{
 					Name:      "test-a",
@@ -417,7 +393,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 					Status:    v1alpha1.TestRunning,
 					Executions: []v1alpha1.TestExecution{
 						{
-							ID:        "octopus-testing-pod-123",
+							ID:        getPodNameForTestA(0),
 							PodPhase:  v12.PodRunning,
 							StartTime: &v1.Time{Time: getTimeInPast()},
 						},
@@ -429,7 +405,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 					Status:    v1alpha1.TestFailed,
 					Executions: []v1alpha1.TestExecution{
 						{
-							ID:             "octopus-testing-pod-456",
+							ID:             getPodNameForTestB(0),
 							PodPhase:       v12.PodFailed,
 							StartTime:      &v1.Time{Time: getTimeInPast()},
 							CompletionTime: &v1.Time{Time: getStartTime()},
@@ -450,12 +426,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 				Name: "test-all",
 			},
 			Status: v1alpha1.TestSuiteStatus{
-				Conditions: []v1alpha1.TestSuiteCondition{
-					{
-						Type:   v1alpha1.SuiteRunning,
-						Status: v1alpha1.StatusTrue,
-					},
-				},
+				Conditions: conditionSuiteRunning(),
 				Results: []v1alpha1.TestResult{
 					{
 						Name:      "test-a",
@@ -463,7 +434,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 						Status:    v1alpha1.TestRunning,
 						Executions: []v1alpha1.TestExecution{
 							{
-								ID:        "octopus-testing-pod-123",
+								ID:        getPodNameForTestA(0),
 								StartTime: &v1.Time{Time: getTimeInPast()},
 								PodPhase:  v12.PodRunning,
 							},
@@ -475,7 +446,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 						Status:    v1alpha1.TestRunning,
 						Executions: []v1alpha1.TestExecution{
 							{
-								ID:        "octopus-testing-pod-456",
+								ID:        getPodNameForTestB(0),
 								StartTime: &v1.Time{Time: getTimeInPast()},
 								PodPhase:  v12.PodRunning,
 							},
@@ -486,10 +457,10 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 		}
 		// WHEN
 		stat, err := sut.EnsureStatusIsUpToDate(suite, []v12.Pod{
-			getPodAInStatus(v12.PodStatus{
+			getTestPodAInStatus(0, v12.PodStatus{
 				Phase: v12.PodSucceeded,
 			}),
-			getPodBInStatus(v12.PodStatus{
+			getTestPodBInStatus(0, v12.PodStatus{
 				Phase: v12.PodSucceeded,
 			}),
 		})
@@ -515,7 +486,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 					Status:    v1alpha1.TestSucceeded,
 					Executions: []v1alpha1.TestExecution{
 						{
-							ID:             "octopus-testing-pod-123",
+							ID:             getPodNameForTestA(0),
 							PodPhase:       v12.PodSucceeded,
 							StartTime:      &v1.Time{Time: getTimeInPast()},
 							CompletionTime: &v1.Time{Time: getStartTime()},
@@ -528,7 +499,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 					Status:    v1alpha1.TestSucceeded,
 					Executions: []v1alpha1.TestExecution{
 						{
-							ID:             "octopus-testing-pod-456",
+							ID:             getPodNameForTestB(0),
 							PodPhase:       v12.PodSucceeded,
 							StartTime:      &v1.Time{Time: getTimeInPast()},
 							CompletionTime: &v1.Time{Time: getStartTime().Add(getTimeInc())},
@@ -547,12 +518,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 				Name: "test-all",
 			},
 			Status: v1alpha1.TestSuiteStatus{
-				Conditions: []v1alpha1.TestSuiteCondition{
-					{
-						Type:   v1alpha1.SuiteRunning,
-						Status: v1alpha1.StatusTrue,
-					},
-				},
+				Conditions: conditionSuiteRunning(),
 				Results: []v1alpha1.TestResult{
 					{
 						Name:      "test-a",
@@ -560,7 +526,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 						Status:    v1alpha1.TestRunning,
 						Executions: []v1alpha1.TestExecution{
 							{
-								ID:        "octopus-testing-pod-123",
+								ID:        getPodNameForTestA(0),
 								StartTime: &v1.Time{Time: getTimeInPast()},
 								PodPhase:  v12.PodRunning,
 							},
@@ -572,7 +538,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 						Status:    v1alpha1.TestRunning,
 						Executions: []v1alpha1.TestExecution{
 							{
-								ID:        "octopus-testing-pod-456",
+								ID:        getPodNameForTestB(0),
 								StartTime: &v1.Time{Time: getTimeInPast()},
 								PodPhase:  v12.PodRunning,
 							},
@@ -583,10 +549,10 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 		}
 		// WHEN
 		stat, err := sut.EnsureStatusIsUpToDate(suite, []v12.Pod{
-			getPodAInStatus(v12.PodStatus{
+			getTestPodAInStatus(0, v12.PodStatus{
 				Phase: v12.PodSucceeded,
 			}),
-			getPodBInStatus(v12.PodStatus{
+			getTestPodBInStatus(0, v12.PodStatus{
 				Phase:   v12.PodFailed,
 				Message: "failedMessage",
 				Reason:  "failedReason",
@@ -614,7 +580,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 					Status:    v1alpha1.TestSucceeded,
 					Executions: []v1alpha1.TestExecution{
 						{
-							ID:             "octopus-testing-pod-123",
+							ID:             getPodNameForTestA(0),
 							PodPhase:       v12.PodSucceeded,
 							StartTime:      &v1.Time{Time: getTimeInPast()},
 							CompletionTime: &v1.Time{Time: getStartTime()},
@@ -627,7 +593,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 					Status:    v1alpha1.TestFailed,
 					Executions: []v1alpha1.TestExecution{
 						{
-							ID:             "octopus-testing-pod-456",
+							ID:             getPodNameForTestB(0),
 							PodPhase:       v12.PodFailed,
 							StartTime:      &v1.Time{Time: getTimeInPast()},
 							CompletionTime: &v1.Time{Time: getStartTime().Add(getTimeInc())},
@@ -650,12 +616,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 				Count: 10,
 			},
 			Status: v1alpha1.TestSuiteStatus{
-				Conditions: []v1alpha1.TestSuiteCondition{
-					{
-						Type:   v1alpha1.SuiteRunning,
-						Status: v1alpha1.StatusTrue,
-					},
-				},
+				Conditions: conditionSuiteRunning(),
 				Results: []v1alpha1.TestResult{
 					{
 						Name:      "test-a",
@@ -663,7 +624,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 						Status:    v1alpha1.TestRunning,
 						Executions: []v1alpha1.TestExecution{
 							{
-								ID:        "octopus-testing-pod-123",
+								ID:        getPodNameForTestA(0),
 								StartTime: &v1.Time{Time: getTimeInPast()},
 								PodPhase:  v12.PodRunning,
 							},
@@ -674,7 +635,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 		}
 		// WHEN
 		stat, err := sut.EnsureStatusIsUpToDate(suite, []v12.Pod{
-			getPodAInStatus(v12.PodStatus{
+			getTestPodAInStatus(0, v12.PodStatus{
 				Phase: v12.PodSucceeded,
 			}),
 		})
@@ -682,12 +643,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, stat)
 		assert.Equal(t, v1alpha1.TestSuiteStatus{
-			Conditions: []v1alpha1.TestSuiteCondition{
-				{
-					Type:   v1alpha1.SuiteRunning,
-					Status: v1alpha1.StatusTrue,
-				},
-			},
+			Conditions: conditionSuiteRunning(),
 			Results: []v1alpha1.TestResult{
 				{
 					Name:      "test-a",
@@ -695,7 +651,7 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 					Status:    v1alpha1.TestRunning,
 					Executions: []v1alpha1.TestExecution{
 						{
-							ID:             "octopus-testing-pod-123",
+							ID:             getPodNameForTestA(0),
 							PodPhase:       v12.PodSucceeded,
 							StartTime:      &v1.Time{Time: getTimeInPast()},
 							CompletionTime: &v1.Time{Time: getStartTime()},
@@ -706,6 +662,218 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 		}, *stat)
 	})
 
+	t.Run("maxRetries: suite is succeeded if tests finally pass", func(t *testing.T) {
+		// GIVEN
+		sut := status.NewService(mockNowProvider())
+		suite := v1alpha1.ClusterTestSuite{
+			Spec: specWithRetries(3),
+			Status: v1alpha1.TestSuiteStatus{
+				Conditions: conditionSuiteRunning(),
+				Results: []v1alpha1.TestResult{
+					{
+						Name:      "test-a",
+						Namespace: "default",
+						Status:    v1alpha1.TestRunning,
+						Executions: []v1alpha1.TestExecution{
+							{
+								ID:       getPodNameForTestA(0),
+								PodPhase: v12.PodFailed,
+							},
+							{
+								ID:       getPodNameForTestA(1),
+								PodPhase: v12.PodFailed,
+							},
+							{
+								ID:       getPodNameForTestA(2),
+								PodPhase: v12.PodFailed,
+							},
+							{
+								ID:       getPodNameForTestA(3),
+								PodPhase: v12.PodRunning,
+							},
+						},
+					},
+				},
+			},
+		}
+		// WHEN
+		stat, err := sut.EnsureStatusIsUpToDate(suite, []v12.Pod{
+			getTestPodAInStatus(0, v12.PodStatus{Phase: v12.PodFailed}),
+			getTestPodAInStatus(1, v12.PodStatus{Phase: v12.PodFailed}),
+			getTestPodAInStatus(2, v12.PodStatus{Phase: v12.PodFailed}),
+			getTestPodAInStatus(3, v12.PodStatus{Phase: v12.PodSucceeded}),
+		})
+		// THEN
+		require.NoError(t, err)
+		require.NotNil(t, stat)
+		assert.Equal(t, []v1alpha1.TestSuiteCondition{
+			{
+				Type:   v1alpha1.SuiteRunning,
+				Status: v1alpha1.StatusFalse,
+			},
+			{
+				Type:   v1alpha1.SuiteSucceeded,
+				Status: v1alpha1.StatusTrue,
+			},
+		}, stat.Conditions)
+
+	})
+
+	t.Run("maxRetries: suite is running if pods are not finished", func(t *testing.T) {
+		// GIVEN
+		sut := status.NewService(mockNowProvider())
+		suite := v1alpha1.ClusterTestSuite{
+			Spec: specWithRetries(3),
+			Status: v1alpha1.TestSuiteStatus{
+				Conditions: conditionSuiteRunning(),
+				Results: []v1alpha1.TestResult{
+					{
+						Name:      "test-a",
+						Namespace: "default",
+						Status:    v1alpha1.TestRunning,
+						Executions: []v1alpha1.TestExecution{
+							{
+								ID:       getPodNameForTestA(0),
+								PodPhase: v12.PodFailed,
+							},
+							{
+								ID:       getPodNameForTestA(1),
+								PodPhase: v12.PodPending,
+							},
+
+						},
+					},
+				},
+			},
+		}
+		// WHEN
+		stat, err := sut.EnsureStatusIsUpToDate(suite, []v12.Pod{
+			getTestPodAInStatus(0, v12.PodStatus{Phase: v12.PodFailed}),
+			getTestPodAInStatus(1, v12.PodStatus{Phase: v12.PodRunning}),
+		})
+		// THEN
+		require.NoError(t, err)
+		require.NotNil(t, stat)
+		assert.Equal(t, []v1alpha1.TestSuiteCondition{
+			{
+				Type:   v1alpha1.SuiteRunning,
+				Status: v1alpha1.StatusTrue,
+			},
+		}, stat.Conditions)
+
+	})
+
+	t.Run("maxRetries: suite is running if all test failed but maxRetries not reached", func(t *testing.T) {
+		// GIVEN
+		sut := status.NewService(mockNowProvider())
+		suite := v1alpha1.ClusterTestSuite{
+			Spec: specWithRetries(3),
+			Status: v1alpha1.TestSuiteStatus{
+				Conditions: conditionSuiteRunning(),
+				Results: []v1alpha1.TestResult{
+					{
+						Name:      "test-a",
+						Namespace: "default",
+						Status:    v1alpha1.TestRunning,
+						Executions: []v1alpha1.TestExecution{
+							{
+								ID:       getPodNameForTestA(0),
+								PodPhase: v12.PodFailed,
+							},
+						},
+					},
+				},
+			},
+		}
+		// WHEN
+		stat, err := sut.EnsureStatusIsUpToDate(suite, []v12.Pod{
+			getTestPodAInStatus(0, v12.PodStatus{Phase: v12.PodFailed}),
+		})
+		// THEN
+		require.NoError(t, err)
+		require.NotNil(t, stat)
+		assert.Equal(t, []v1alpha1.TestSuiteCondition{
+			{
+				Type:   v1alpha1.SuiteRunning,
+				Status: v1alpha1.StatusTrue,
+			},
+		}, stat.Conditions)
+
+	})
+
+	t.Run("maxRetries: suite is failed if test failed maximum number of times", func(t *testing.T) {
+		// GIVEN
+		sut := status.NewService(mockNowProvider())
+		suite := v1alpha1.ClusterTestSuite{
+			Spec: specWithRetries(3),
+			Status: v1alpha1.TestSuiteStatus{
+				Conditions: conditionSuiteRunning(),
+				Results: []v1alpha1.TestResult{
+					{
+						Name:      "test-a",
+						Namespace: "default",
+						Status:    v1alpha1.TestRunning,
+						Executions: []v1alpha1.TestExecution{
+							{
+								ID:       getPodNameForTestA(0),
+								PodPhase: v12.PodFailed,
+							},
+							{
+								ID:       getPodNameForTestA(1),
+								PodPhase: v12.PodFailed,
+							},
+							{
+								ID:       getPodNameForTestA(2),
+								PodPhase: v12.PodFailed,
+							},
+							{
+								ID:       getPodNameForTestA(3),
+								PodPhase: v12.PodRunning,
+							},
+						},
+					},
+				},
+			},
+		}
+		// WHEN
+		stat, err := sut.EnsureStatusIsUpToDate(suite, []v12.Pod{
+			getTestPodAInStatus(0, v12.PodStatus{Phase: v12.PodFailed}),
+			getTestPodAInStatus(1, v12.PodStatus{Phase: v12.PodFailed}),
+			getTestPodAInStatus(2, v12.PodStatus{Phase: v12.PodFailed}),
+			getTestPodAInStatus(3, v12.PodStatus{Phase: v12.PodFailed}),
+
+		})
+		// THEN
+		require.NoError(t, err)
+		require.NotNil(t, stat)
+		assert.Equal(t, []v1alpha1.TestSuiteCondition{
+			{
+				Type:   v1alpha1.SuiteRunning,
+				Status: v1alpha1.StatusFalse,
+			},
+			{
+				Type:   v1alpha1.SuiteFailed,
+				Status: v1alpha1.StatusTrue,
+			},
+		}, stat.Conditions)
+
+	})
+
+}
+
+func specWithRetries(retries int64) v1alpha1.TestSuiteSpec {
+	return v1alpha1.TestSuiteSpec{
+		MaxRetries: retries,
+	}
+}
+
+func conditionSuiteRunning() []v1alpha1.TestSuiteCondition {
+	return []v1alpha1.TestSuiteCondition{
+		{
+			Type:   v1alpha1.SuiteRunning,
+			Status: v1alpha1.StatusTrue,
+		},
+	}
 }
 
 func TestMarkAsScheduled(t *testing.T) {
@@ -726,7 +894,7 @@ func TestMarkAsScheduled(t *testing.T) {
 				Status:    v1alpha1.TestNotYetScheduled,
 			},
 		},
-	}, "test-a", "default", "octopus-testing-pod-123")
+	}, "test-a", "default", getPodNameForTestA(0))
 	// THEN
 	require.NoError(t, err)
 	require.Equal(t, v1alpha1.TestSuiteStatus{
@@ -743,7 +911,7 @@ func TestMarkAsScheduled(t *testing.T) {
 				Status:    v1alpha1.TestScheduled,
 				Executions: []v1alpha1.TestExecution{
 					{
-						ID:        "octopus-testing-pod-123",
+						ID:        getPodNameForTestA(0),
 						StartTime: &v1.Time{Time: getStartTime()},
 					},
 				},
@@ -811,8 +979,6 @@ func TestGetExecutionsInProgress(t *testing.T) {
 
 }
 
-// TODO test for calculateTestStatus
-
 func mockNowProvider() func() time.Time {
 	startTime := getStartTime()
 	return func() time.Time {
@@ -834,10 +1000,18 @@ func getTimeInc() time.Duration {
 	return time.Second
 }
 
-func getPodAInStatus(podStatus v12.PodStatus) v12.Pod {
+func getPodNameForTestA(exec int) string {
+	return fmt.Sprintf("oct-tp-test-all-test-a-%d", exec)
+}
+
+func getPodNameForTestB(exec int) string {
+	return fmt.Sprintf("oct-tp-test-all-test-b-%d", exec)
+}
+
+func getTestPodAInStatus(exec int, podStatus v12.PodStatus) v12.Pod {
 	return v12.Pod{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      "octopus-testing-pod-123",
+			Name:      getPodNameForTestA(exec),
 			Namespace: "default",
 			Labels: map[string]string{
 				"testing.kyma-project.io/created-by-octopus": "true",
@@ -849,10 +1023,10 @@ func getPodAInStatus(podStatus v12.PodStatus) v12.Pod {
 	}
 }
 
-func getPodBInStatus(podStatus v12.PodStatus) v12.Pod {
+func getTestPodBInStatus(exec int, podStatus v12.PodStatus) v12.Pod {
 	return v12.Pod{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      "octopus-testing-pod-456",
+			Name:      getPodNameForTestB(exec),
 			Namespace: "default",
 			Labels: map[string]string{
 				"testing.kyma-project.io/created-by-octopus": "true",

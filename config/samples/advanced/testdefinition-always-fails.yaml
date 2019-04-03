@@ -17,6 +17,7 @@ spec:
         - name: test
           image: alpine:latest
           command:
-            - "cat"
-          arguments:
-            - "/file/does/not/exist"
+          - "/bin/sh"
+          - "-ecx"
+          - |
+            exit 123

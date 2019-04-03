@@ -2,7 +2,6 @@ package scheduler_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	rlog "sigs.k8s.io/controller-runtime/pkg/runtime/log"
@@ -69,37 +68,6 @@ func TestTryScheduleHappyPath(t *testing.T) {
 	require.NotNil(t, pod.OwnerReferences[0].Controller)
 	assert.True(t, *pod.OwnerReferences[0].Controller)
 	assert.Equal(t, "test-all", pod.OwnerReferences[0].Name)
-}
-
-func TestTryScheduleErrorOnGettingNextTest(t *testing.T) {
-	// GIVEN
-	mockStatusProvider := &automock.StatusProvider{}
-	defer mockStatusProvider.AssertExpectations(t)
-
-	mockLogger := &automock.Logger{}
-	defer mockLogger.AssertExpectations(t)
-
-	suite := v1alpha1.ClusterTestSuite{
-		ObjectMeta: v1.ObjectMeta{
-			Name: "test-all",
-		},
-		Spec: v1alpha1.TestSuiteSpec{
-			Concurrency: 1,
-			Count:       1,
-			//currently MaxRetries is not supported, so it should return error
-			MaxRetries: 100,
-		},
-	}
-
-	mockStatusProvider.On("GetExecutionsInProgress", suite).Return(nil)
-	mockLogger.ExpectLoggedWithValues("suite", "test-all")
-	mockLogger.ExpectLoggedOnError(fmt.Errorf("cannot find test selector strategy that is applicable for suite [test-all]"), "No applicable strategy")
-
-	sut := scheduler.NewService(mockStatusProvider, nil, nil, nil, mockLogger)
-	// WHEN
-	_, _, err := sut.TrySchedule(suite)
-	// THEN
-	require.EqualError(t, err, "while getting next to schedule: cannot find test selector strategy that is applicable for suite [test-all]")
 }
 
 func TestTryScheduleNoTestToExecuteNow(t *testing.T) {
@@ -238,32 +206,6 @@ func TestGetNextToSchedule(t *testing.T) {
 		// THEN
 		require.NoError(t, err)
 		require.Nil(t, actual)
-	})
-
-	t.Run("returns error if strategy for finding next to schedule is not yet implemented", func(t *testing.T) {
-		// GIVEN
-		suite := v1alpha1.ClusterTestSuite{
-			ObjectMeta: v1.ObjectMeta{
-				Name: "all-tests",
-			},
-			Spec: v1alpha1.TestSuiteSpec{
-				Concurrency: 1,
-				MaxRetries:  10,
-			},
-		}
-		mockLogger := &automock.Logger{}
-		defer mockLogger.AssertExpectations(t)
-		mockLogger.ExpectLoggedWithValues("suite", "all-tests")
-		mockLogger.ExpectLoggedOnError(fmt.Errorf("cannot find test selector strategy that is applicable for suite [%s]", "all-tests"), "No applicable strategy")
-		mockStatusProvider := &automock.StatusProvider{}
-		mockStatusProvider.On("GetExecutionsInProgress", mock.Anything).Return([]v1alpha1.TestExecution{}).Once()
-		defer mockStatusProvider.AssertExpectations(t)
-		sut := scheduler.NewService(mockStatusProvider, nil, nil, nil, mockLogger)
-		// WHEN
-		_, err := sut.GetNextToSchedule(suite)
-		// THEN
-		require.Error(t, err)
-
 	})
 
 	t.Run("returns concurrent test before sequential tests", func(t *testing.T) {
