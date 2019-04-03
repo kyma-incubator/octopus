@@ -9,22 +9,22 @@ import (
 	"testing"
 )
 
-type retryTestCtx struct {
-	testedMethod        func(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult
-	DisabledConcurrency bool
-	testNamePrefix      string
-}
-
 func TestRetryStrategy(t *testing.T) {
+	type retryTestCtx struct {
+		testedMethod        func(suite v1alpha1.ClusterTestSuite) *v1alpha1.TestResult
+		disabledConcurrency bool
+		testNamePrefix      string
+	}
+
 	testCases := []retryTestCtx{
 		{
 			testedMethod:        (&retryStrategy{}).GetTestToRunConcurrently,
-			DisabledConcurrency: false,
+			disabledConcurrency: false,
 			testNamePrefix:      "get concurrently",
 		},
 		{
 			testedMethod:        (&retryStrategy{}).GetTestToRunSequentially,
-			DisabledConcurrency: true,
+			disabledConcurrency: true,
 			testNamePrefix:      "get sequentially",
 		},
 	}
@@ -40,7 +40,7 @@ func TestRetryStrategy(t *testing.T) {
 			require.Nil(t, actual)
 		})
 		var ignoredTestType string
-		if tc.DisabledConcurrency {
+		if tc.disabledConcurrency {
 			ignoredTestType = "concurrent"
 		} else {
 			ignoredTestType = "sequential"
@@ -52,7 +52,7 @@ func TestRetryStrategy(t *testing.T) {
 				Status: v1alpha1.TestSuiteStatus{
 					Results: []v1alpha1.TestResult{
 						{
-							DisabledConcurrency: !tc.DisabledConcurrency,
+							DisabledConcurrency: !tc.disabledConcurrency,
 						},
 					},
 				},
@@ -71,7 +71,7 @@ func TestRetryStrategy(t *testing.T) {
 					Results: []v1alpha1.TestResult{
 						{
 							Name:                "test-a",
-							DisabledConcurrency: tc.DisabledConcurrency,
+							DisabledConcurrency: tc.disabledConcurrency,
 						},
 					},
 				},
@@ -91,7 +91,7 @@ func TestRetryStrategy(t *testing.T) {
 					Results: []v1alpha1.TestResult{
 						{
 							Name:                "test-a",
-							DisabledConcurrency: tc.DisabledConcurrency,
+							DisabledConcurrency: tc.disabledConcurrency,
 							Executions:          executionsWithPhases(v1.PodFailed, v1.PodFailed, v1.PodFailed),
 						},
 					},
@@ -105,7 +105,7 @@ func TestRetryStrategy(t *testing.T) {
 
 		})
 
-		t.Run(fmt.Sprintf("%s ignores tests that have many executions and one of them succeeded", tc.testNamePrefix), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s ignores tests that have many failed executions and finally succeeded", tc.testNamePrefix), func(t *testing.T) {
 			// GIVEN
 			suite := v1alpha1.ClusterTestSuite{
 				Spec: specWithRetries(3),
@@ -113,7 +113,7 @@ func TestRetryStrategy(t *testing.T) {
 					Results: []v1alpha1.TestResult{
 						{
 							Name:                "test-a",
-							DisabledConcurrency: tc.DisabledConcurrency,
+							DisabledConcurrency: tc.disabledConcurrency,
 							Executions:          executionsWithPhases(v1.PodFailed, v1.PodFailed, v1.PodSucceeded),
 						},
 					},
@@ -134,7 +134,7 @@ func TestRetryStrategy(t *testing.T) {
 					Results: []v1alpha1.TestResult{
 						{
 							Name:                "test-a",
-							DisabledConcurrency: tc.DisabledConcurrency,
+							DisabledConcurrency: tc.disabledConcurrency,
 							Executions:          executionsWithPhases(v1.PodRunning),
 						},
 					},
@@ -154,7 +154,7 @@ func TestRetryStrategy(t *testing.T) {
 					Results: []v1alpha1.TestResult{
 						{
 							Name:                "test-a",
-							DisabledConcurrency: tc.DisabledConcurrency,
+							DisabledConcurrency: tc.disabledConcurrency,
 							Executions:          executionsWithPhases(v1.PodPending),
 						},
 					},
@@ -174,7 +174,7 @@ func TestRetryStrategy(t *testing.T) {
 					Results: []v1alpha1.TestResult{
 						{
 							Name:                "test-a",
-							DisabledConcurrency: tc.DisabledConcurrency,
+							DisabledConcurrency: tc.disabledConcurrency,
 							Executions:          executionsWithPhases(v1.PodFailed, v1.PodFailed, v1.PodFailed, v1.PodFailed),
 						},
 					},
