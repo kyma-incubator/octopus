@@ -8,4 +8,4 @@ metadata:
   name: testsuite-retries
 spec:
   maxRetries: 10
-  concurrency: 1
+  concurrency: 5

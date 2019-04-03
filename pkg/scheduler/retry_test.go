@@ -105,7 +105,7 @@ func TestRetryStrategy(t *testing.T) {
 
 		})
 
-		t.Run(fmt.Sprintf("%s ignore tests that have many executions and one of them succeeded", tc.testNamePrefix), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s ignores tests that have many executions and one of them succeeded", tc.testNamePrefix), func(t *testing.T) {
 			// GIVEN
 			suite := v1alpha1.ClusterTestSuite{
 				Spec: specWithRetries(3),
@@ -126,7 +126,7 @@ func TestRetryStrategy(t *testing.T) {
 
 		})
 
-		t.Run(fmt.Sprintf("%s ignore tests that are currently running", tc.testNamePrefix), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s ignores tests that are currently running", tc.testNamePrefix), func(t *testing.T) {
 			// GIVEN
 			suite := v1alpha1.ClusterTestSuite{
 				Spec: specWithRetries(3),
@@ -146,7 +146,7 @@ func TestRetryStrategy(t *testing.T) {
 			require.Nil(t, actual)
 		})
 
-		t.Run(fmt.Sprintf("%s ignore tests that are currently pending", tc.testNamePrefix), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s ignores tests that are currently pending", tc.testNamePrefix), func(t *testing.T) {
 			// GIVEN
 			suite := v1alpha1.ClusterTestSuite{
 				Spec: specWithRetries(3),
@@ -166,7 +166,7 @@ func TestRetryStrategy(t *testing.T) {
 			require.Nil(t, actual)
 		})
 
-		t.Run(fmt.Sprintf("%s ignore tests that failed maxRetries times", tc.testNamePrefix), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s ignores tests that failed maxRetries times", tc.testNamePrefix), func(t *testing.T) {
 			// GIVEN
 			suite := v1alpha1.ClusterTestSuite{
 				Spec: specWithRetries(3),

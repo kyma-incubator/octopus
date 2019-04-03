@@ -740,7 +740,6 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 								ID:       getPodNameForTestA(1),
 								PodPhase: v12.PodPending,
 							},
-
 						},
 					},
 				},
@@ -841,7 +840,6 @@ func TestEnsureStatusIsUpToDate(t *testing.T) {
 			getTestPodAInStatus(1, v12.PodStatus{Phase: v12.PodFailed}),
 			getTestPodAInStatus(2, v12.PodStatus{Phase: v12.PodFailed}),
 			getTestPodAInStatus(3, v12.PodStatus{Phase: v12.PodFailed}),
-
 		})
 		// THEN
 		require.NoError(t, err)
