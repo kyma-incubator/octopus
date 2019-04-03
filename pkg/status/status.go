@@ -65,9 +65,30 @@ func (s *Service) calculateTestStatus(tr v1alpha1.TestResult, maxRetries, count 
 		return v1alpha1.TestNotYetScheduled
 	}
 
-	// TODO handle maxRetries https://github.com/kyma-incubator/octopus/issues/8
 	if maxRetries > 0 {
-		return v1alpha1.TestUnknown
+		var anySucceeded bool
+		var anyRunning bool
+		for _, exec := range tr.Executions {
+			if exec.PodPhase == v1.PodSucceeded {
+				anySucceeded = true
+				break
+			}
+			if exec.PodPhase == v1.PodRunning || exec.PodPhase == v1.PodPending {
+				anyRunning = true
+				break
+			}
+		}
+		if anySucceeded {
+			return v1alpha1.TestSucceeded
+		}
+		if anyRunning {
+			return v1alpha1.TestRunning
+		}
+		if len(tr.Executions) >= int(maxRetries+1) {
+			return v1alpha1.TestFailed
+		}
+		return v1alpha1.TestRunning
+
 	}
 
 	if len(tr.Executions) < int(count) {
