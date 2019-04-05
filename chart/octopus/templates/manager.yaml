@@ -37,14 +37,13 @@ spec:
       controller-tools.k8s.io: "1.0"
   serviceName: {{ template "octopus.fullname" . }}
   template:
-
     metadata:
       labels:
         app: {{ template "octopus.name" . }}
         control-plane: controller-manager
         controller-tools.k8s.io: "1.0"
     spec:
-      serviceAccountName: {{ template "octopus.name" . }}
+      serviceAccountName: {{ template "octopus.fullname" . }}
       containers:
       - command:
         - /manager

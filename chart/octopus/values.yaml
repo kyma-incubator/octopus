@@ -4,5 +4,5 @@
 
 image:
   registry: eu.gcr.io/kyma-project/incubator
-  dir: pr/
-  version: PR-16
+  dir: develop/
+  version: dc5dc284
