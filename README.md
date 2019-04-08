@@ -1,6 +1,6 @@
 # Octopus
 
-![](octopus.JPG)
+![](docs/assets/octopus.JPG)
 
 ## Overview
 
