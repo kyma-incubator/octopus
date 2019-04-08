@@ -21,7 +21,7 @@ Use the following tools to set up the project:
 * The latest version of [Mockery](https://github.com/vektra/mockery) 
 
 ## Installation
-To install  Octopus [helm](https://helm.sh/) chart on the cluster, run the following command:
+To install the Octopus [helm](https://helm.sh/) chart on a cluster, run the following command:
 ```
 helm install ./chart/octopus/ --name={release name} --namespace={namepsace}
 ```
