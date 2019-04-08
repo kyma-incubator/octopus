@@ -23,7 +23,7 @@ Use the following tools to set up the project:
 ## Installation
 To install Octopus [helm](https://helm.sh/) chart on the cluster, run the following command:
 ```
-helm install ./chart/octopus/ --name={release name}
+helm install ./chart/octopus/ --name={release name} --namespace={namepsace}
 ```
 
 ## Development
