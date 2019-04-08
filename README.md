@@ -44,4 +44,4 @@ make validate
 ```
 
 ### Upgrade chart
-Chart `chart/octopus` is upgraded manually, by coping respective files from the `config` directory.
+Chart `chart/octopus` is upgraded manually, by copying respective files from the `config` directory.
