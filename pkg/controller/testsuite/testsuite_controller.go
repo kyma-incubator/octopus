@@ -118,8 +118,8 @@ const (
 
 // Automatically generate RBAC rules to allow the Controller to read and write Pods
 // +kubebuilder:rbac:groups=apps,resources=pods,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=testing.kyma-project.io,resources=testsuites,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=testing.kyma-project.io,resources=testsuites/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=testing.kyma-project.io,resources=clustertestsuites,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=testing.kyma-project.io,resources=clustertestsuites/status,verbs=get;update;patch
 func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	ctx := context.TODO()
 	r.throttleIfNeeded()

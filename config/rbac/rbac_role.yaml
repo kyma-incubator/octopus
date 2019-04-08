@@ -17,9 +17,9 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - testing.kyma-project.io
+  - apps
   resources:
-  - testsuites
+  - pods
   verbs:
   - get
   - list
@@ -31,7 +31,19 @@ rules:
 - apiGroups:
   - testing.kyma-project.io
   resources:
-  - testsuites/status
+  - clustertestsuites
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - testing.kyma-project.io
+  resources:
+  - clustertestsuites/status
   verbs:
   - get
   - update
