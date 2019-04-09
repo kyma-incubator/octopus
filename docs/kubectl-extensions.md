@@ -39,4 +39,4 @@ Next to the test name, there is a symbol which specifies the status of a given t
 - `-` - test execution failed
 - `?` - test execution is in progress or not yet scheduled
 
->**NOTE:** In the given example, `test-monitoring` failed at first, then it was retried****, and finally it succeeded.  
+>**NOTE:** In the given example, `test-monitoring` failed at first, then it was retried, and finally it succeeded.  
