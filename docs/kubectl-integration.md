@@ -4,17 +4,17 @@ Octopus provides integration with `kubectl` to simplify the work on its resource
 
 ## ClusterTestSuite template
 
-Status of a `ClusterTestSuite` contains many information.
-Output from following command:
+To get the full status of ClusterTestSuite, run:
 ```
 kubectl get cts -oyaml {suite mame}
 ```
-can be overwhelming. To get more concise but still informative output, you can use template stored in `kubectl/suite.template`.
+However, the output of this status contains a lot of information, which can be overwhelming. 
+To get more concise but still informative output, use the template stored in `kubectl/suite.template`. 
 To download recent version of the template, execute the following command:
 ```
 curl -LO https://raw.githubusercontent.com/kyma-incubator/octopus/master/kubectl/suite.template
 ```
-Then, set the `template` argument to path to the downloaded file:
+Then, set the `template` argument to point to the downloaded file:
 ```
  kubectl get cts {suite name} -ogo-template-file --template={path to template file}
 ```
