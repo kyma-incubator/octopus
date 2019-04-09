@@ -1,20 +1,21 @@
-# Integration with Kubectl
+# Kubectl Extensions
 
-Octopus provides integration with `kubectl` to simplify the work on its resources.
+Octopus provides integration with kubectl to simplify work on its resources.
 
-## ClusterTestSuite template
 
-To get the full status of ClusterTestSuite, run:
+## Concise template for ClusterTestSuite
+
+You can get the full status of ClusterTestSuite by running:
 ```
 kubectl get cts -oyaml {suite mame}
 ```
 However, the output of this status contains a lot of information, which can be overwhelming. 
 To get more concise but still informative output, use the template stored in `kubectl/suite.template`. 
-To download recent version of the template, execute the following command:
+To download the recent version of the template, run:
 ```
 curl -LO https://raw.githubusercontent.com/kyma-incubator/octopus/master/kubectl/suite.template
 ```
-Then, set the `template` argument to point to the downloaded file:
+Then, set the `--template` argument to point to the downloaded file:
 ```
  kubectl get cts {suite name} -ogo-template-file --template={path to template file}
 ```
@@ -38,4 +39,4 @@ Next to the test name, there is a symbol which specifies the status of a given t
 - `-` - test execution failed
 - `?` - test execution is in progress or not yet scheduled
 
-In the above example, `test-monitoring` failed at the first time, then it was retried and finally it succeeded.  
+>**NOTE:** In the given example, `test-monitoring` failed at first, then it was retried****, and finally it succeeded.  
