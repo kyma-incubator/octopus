@@ -10,6 +10,11 @@ Output from following command:
 kubectl get cts -oyaml {suite mame}
 ```
 can be overwhelming. To get more concise but still informative output, you can use template stored in `kubectl/suite.template`.
+To download recent version of the template, execute the following command:
+```
+curl -LO https://raw.githubusercontent.com/kyma-incubator/octopus/master/kubectl/suite.template
+```
+Then, set the `template` argument to path to the downloaded file:
 ```
  kubectl get cts {suite name} -ogo-template-file --template={path to template file}
 ```
@@ -19,10 +24,9 @@ Output:
 Name:           {suite name}
 Concurrency:    1.0
 MaxRetries:     1.0
-Count:          1.0
 StartTime:      2019-04-06T12:56:11Z
 CompletionTime: 2019-04-06T13:22:38Z
-Condition:      Failed
+Condition:      Succeeded
 Tests:
     test-monitoring - + 
     test-events +
@@ -33,3 +37,5 @@ Next to the test names, status of the test executions is displayed:
 - `+` - test execution passed
 - `-` - test execution failed
 - `?` - test execution is in progress or not yet scheduled
+
+In the above example, `test-monitoring` failed at the first time, then it was retried and finally it succeeded.  

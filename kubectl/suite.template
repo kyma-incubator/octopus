@@ -17,8 +17,8 @@ Tests:
         {{- else if eq .podPhase "Failed"}}-
         {{- else }}?
         {{- end}}
+    {{- else}}?
     {{- end}}
-    {{- $ex:=len .executions}}
-    {{- if eq $ex 0}}?
-    {{- end}}
+{{- else}}
+    No tests found
 {{- end}}
