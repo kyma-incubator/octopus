@@ -1,7 +1,7 @@
 # Kubectl Extensions
 
 Octopus provides integration with kubectl to simplify work on its resources.
-
+Read the following sections to learn how you can extend kubectl while working on Octopus.
 
 ## Concise template for ClusterTestSuite
 
