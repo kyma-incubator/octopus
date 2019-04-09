@@ -15,7 +15,6 @@ required = [
     "sigs.k8s.io/testing_frameworks/integration", # for integration testing
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
 	"github.com/vektra/mockery",
-#	"github.com/golang/protobuf/protoc-gen-go"
     ]
 
 [prune]
@@ -40,9 +39,3 @@ required = [
 name = "gopkg.in/fsnotify.v1"
 source = "https://github.com/fsnotify/fsnotify.git"
 version="v1.4.7"
-
-#
-#
-#[[override]]
-#  name="github.com/golang/protobuf"
-#  version="v1.3.1"
