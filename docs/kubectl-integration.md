@@ -18,18 +18,18 @@ Output:
 ```
 Name:           {suite name}
 Concurrency:    1.0
-MaxRetries:     0.0
+MaxRetries:     1.0
 Count:          1.0
 StartTime:      2019-04-06T12:56:11Z
 CompletionTime: 2019-04-06T13:22:38Z
 Condition:      Failed
 Tests:
-    test-monitoring -
+    test-monitoring - + 
     test-events +
     test-ui ?
 ```
 
-Next to the test names, status of the test executions is displayed
-- `+` - test passed
-- `-` - test failed
-- `?` - test is in progress or not yet scheduled
+Next to the test names, status of the test executions is displayed:
+- `+` - test execution passed
+- `-` - test execution failed
+- `?` - test execution is in progress or not yet scheduled

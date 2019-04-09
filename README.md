@@ -11,7 +11,7 @@ It was created to replace the `helm test` by providing these additional features
 - Running tests multiple times, which is helpful when you add a new test and you want to validate if it is stable, or when you want to reproduce a problem that occurs on CI.
 - Full support for concurrent testing, which allows you to specify how many tests should be executed at the same time.
 
-Octopus provides command line tool to manage Octopus resources. For more info, read **kubectl-suite** [readme file](./cmd/kubectl-suite/README.md)
+Octopus provides integration with `kubectl`. For more info, read[kubectl integration](./docs/kubectl-integration.md)
 
 ## Prerequisites
 
