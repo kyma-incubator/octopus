@@ -6,8 +6,8 @@ The folder contains documents that provide insight into Octopus functionality:
 
 <!-- Update the list each time you modify the document structure in this folder. -->
 
-- [Define test and run test suite](tutorial.md) 
-- [Kubectl integration](kubectl-integration.md)
+- [Tutorial on how to define test and run test suite](tutorial.md) 
+- [Kubectl integration guide](kubectl-integration.md)
 
 Read these documents to learn more about CRDs that Octopus uses:
 

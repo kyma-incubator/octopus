@@ -1,8 +1,8 @@
 # Integration with Kubectl
 
-Octopus provides integration with `kubectl` to simplify working with it's resources.
+Octopus provides integration with `kubectl` to simplify the work on its resources.
 
-## Cluster Test Suite Template
+## ClusterTestSuite template
 
 Status of a `ClusterTestSuite` contains many information.
 Output from following command:
@@ -19,7 +19,7 @@ Then, set the `template` argument to path to the downloaded file:
  kubectl get cts {suite name} -ogo-template-file --template={path to template file}
 ```
 
-Output:
+The simplified output looks as follows:
 ```
 Name:           {suite name}
 Concurrency:    1.0
@@ -33,7 +33,7 @@ Tests:
     test-ui ?
 ```
 
-Next to the test names, status of the test executions is displayed:
+Next to the test name, there is a symbol which specifies the status of a given test execution:
 - `+` - test execution passed
 - `-` - test execution failed
 - `?` - test execution is in progress or not yet scheduled
