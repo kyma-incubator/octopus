@@ -1,5 +1,7 @@
 # Octopus
 
+![](docs/assets/octopus.JPG)
+
 ## Overview
 
 Octopus is a testing framework that allows you to run tests defined as Docker images on a running cluster.
@@ -8,6 +10,8 @@ It was created to replace the `helm test` by providing these additional features
 - Automatic retries on failed tests, which is a remedy for flaky tests. 
 - Running tests multiple times, which is helpful when you add a new test and you want to validate if it is stable, or when you want to reproduce a problem that occurs on CI.
 - Full support for concurrent testing, which allows you to specify how many tests should be executed at the same time.
+
+Octopus provides extensions for kubectl. For more information, read [this](docs/kubectl-extensions.md) document.
 
 ## Prerequisites
 

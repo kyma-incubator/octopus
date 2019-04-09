@@ -1,0 +1,24 @@
+{{- printf "%-15s %s\n" "Name:"  .metadata.name }}
+{{- printf "%-15s %.1f\n" "Concurrency:" .spec.concurrency }}
+{{- printf "%-15s %.1f\n" "MaxRetries:" .spec.maxRetries}}
+{{- printf "%-15s %.1f\n" "Count:" .spec.count}}
+{{- printf "%-15s %v\n" "StartTime:"  .status.startTime }}
+{{- printf "%-15s %v" "CompletionTime:" .status.completionTime }}
+{{- range .status.conditions }}
+    {{- if eq .status "True" -}}
+        {{ printf "\n%-15s %v" "Condition: " .type }}
+    {{- end }}
+{{- end }}
+Tests:
+{{- range .status.results }}
+    {{print .name " "}}
+    {{- range .executions}}
+        {{- if eq .podPhase "Succeeded"}}+
+        {{- else if eq .podPhase "Failed"}}-
+        {{- else }}?
+        {{- end}}
+    {{- else}}?
+    {{- end}}
+{{- else}}
+    No tests found
+{{- end}}
