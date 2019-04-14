@@ -1,0 +1,18 @@
+---
+
+apiVersion: testing.kyma-project.io/v1alpha1
+kind: ClusterTestSuite
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: testsuite-all
+spec:
+  count: 1
+  selectors:
+    matchNames:
+      - name: test-ls
+        namespace: default
+      - name: test-pwd
+        namespace: default # what if namespace is missing?
+      - name: test-does-not-exist
+        namespace: ns-from-moon

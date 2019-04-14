@@ -143,6 +143,9 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 		logSuite.Info("Initialize suite")
 		testDefs, err := r.definitionService.FindMatching(*suiteCopy)
 		if err != nil {
+			// set status to error
+			r.statusService.SetSuiteCondition(&suiteCopy.Status, testingv1alpha1.SuiteError, testingv1alpha1.ReasonErrorOnInitialization, err.Error())
+			r.Client.Status().Update(ctx, suiteCopy)
 			return reconcile.Result{}, errors.Wrapf(err, "while looking for matching test definitions for suite [%s]", suiteCopy.Name)
 		}
 		currStatus, err := r.statusService.InitializeTests(*suiteCopy, testDefs)
@@ -224,6 +227,7 @@ type SuiteStatusService interface {
 	InitializeTests(suite testingv1alpha1.ClusterTestSuite, defs []testingv1alpha1.TestDefinition) (*testingv1alpha1.TestSuiteStatus, error)
 	IsUninitialized(suite testingv1alpha1.ClusterTestSuite) bool
 	IsFinished(suite testingv1alpha1.ClusterTestSuite) bool
+	SetSuiteCondition(stat *testingv1alpha1.TestSuiteStatus, tp testingv1alpha1.TestSuiteConditionType, reason, msg string)
 }
 
 type TestDefinitionService interface {
