@@ -264,6 +264,73 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 		assertThatPodsCreatedSequentially(t, podReconciler.getAppliedChanges())
 	})
 
+	t.Run("error handling on suite initialization", func(t *testing.T) {
+		// GIVEN
+		// Setup the Manager and Controller
+		mgr, err := manager.New(cfg, manager.Options{})
+		require.NoError(t, err)
+		c := mgr.GetClient()
+
+		ctx := context.Background()
+
+		suite := &testingv1alpha1.ClusterTestSuite{
+			ObjectMeta: metav1.ObjectMeta{Name: "suite-errored"},
+			Spec: testingv1alpha1.TestSuiteSpec{
+				Concurrency: 1,
+				Count:       1,
+				Selectors: testingv1alpha1.TestsSelector{
+					MatchNames: []testingv1alpha1.TestDefReference{
+						{
+							Name: "does-not-exist",
+							Namespace: "does-not-exist",
+						},
+					},
+				},
+			},
+		}
+
+		err = c.Create(ctx, suite)
+		require.NoError(t, err)
+
+		defer cleanupK8sObject(ctx, c, suite)
+
+		require.NoError(t, add(mgr, newReconciler(mgr)))
+		stopMgr, mgrStopped := StartTestManager(t, mgr)
+
+		defer func() {
+			close(stopMgr)
+			mgrStopped.Wait()
+		}()
+
+		logf.SetLogger(logf.ZapLogger(false))
+
+		// THEN
+		repeat.FuncAtMost(t, func() error {
+			// TODO
+			var actualSuite testingv1alpha1.ClusterTestSuite
+			if err := c.Get(ctx, types.NamespacedName{Name: "suite-errored"}, &actualSuite); err != nil {
+				return err
+			}
+			found := false
+			for _, cond := range actualSuite.Status.Conditions {
+				if cond.Type == testingv1alpha1.SuiteError && cond.Status == testingv1alpha1.StatusTrue && cond.Reason == testingv1alpha1.ReasonErrorOnInitialization {
+					found = true
+					fmt.Println(cond.Message)
+					break
+				}
+			}
+
+
+			if found {
+				return errors.New("suite should in in failed status because of the initialization error")
+			}
+			return nil
+		}, defaultAssertionTimeout)
+
+
+
+	})
+
 }
 
 func assertThatPodsCreatedConcurrently(t *testing.T, appliedChanges []podStatusChanges) {

@@ -36,20 +36,57 @@ func TestIsUninitialized(t *testing.T) {
 		assert.True(t, sut.IsUninitialized(given))
 	})
 
-	t.Run("return false when initialized", func(t *testing.T) {
+	for _, tp := range []v1alpha1.TestSuiteConditionType{v1alpha1.SuiteSucceeded, v1alpha1.SuiteRunning, v1alpha1.SuiteFailed} {
+		t.Run(fmt.Sprintf("return false when suite is %s", tp), func(t *testing.T) {
+			// GIVEN
+			given := v1alpha1.ClusterTestSuite{
+				Status: v1alpha1.TestSuiteStatus{
+					Conditions: []v1alpha1.TestSuiteCondition{
+						{
+							Type:   v1alpha1.SuiteSucceeded,
+							Status: v1alpha1.StatusTrue,
+						},
+					},
+				},
+			}
+			// WHEN & THEN
+			assert.False(t, sut.IsUninitialized(given))
+		})
+	}
+
+	t.Run("suite is uninitialized if is in error state and error occurred during initialization", func(t *testing.T) {
 		// GIVEN
 		given := v1alpha1.ClusterTestSuite{
 			Status: v1alpha1.TestSuiteStatus{
 				Conditions: []v1alpha1.TestSuiteCondition{
 					{
-						Type:   v1alpha1.SuiteRunning,
+						Type:   v1alpha1.SuiteError,
 						Status: v1alpha1.StatusTrue,
+						Reason: v1alpha1.ReasonErrorOnInitialization,
+					},
+				},
+			},
+		}
+		// WHEN & THEN
+		assert.True(t, sut.IsUninitialized(given))
+	})
+
+	t.Run("suite is initialized if is in error state and error occurred after initialization", func(t *testing.T) {
+		// GIVEN
+		given := v1alpha1.ClusterTestSuite{
+			Status: v1alpha1.TestSuiteStatus{
+				Conditions: []v1alpha1.TestSuiteCondition{
+					{
+						Type:   v1alpha1.SuiteError,
+						Status: v1alpha1.StatusTrue,
+						Reason: "other reason",
 					},
 				},
 			},
 		}
 		// WHEN & THEN
 		assert.False(t, sut.IsUninitialized(given))
+
 	})
 }
 

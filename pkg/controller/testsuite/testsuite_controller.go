@@ -144,7 +144,7 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 		testDefs, err := r.definitionService.FindMatching(*suiteCopy)
 		if err != nil {
 			// set status to error
-			r.statusService.SetSuiteCondition(&suiteCopy.Status, testingv1alpha1.SuiteError, testingv1alpha1.ReasonErrorOnInitialization, err.Error())
+			r.statusService.SetSuiteCondition(&suiteCopy.Status, testingv1alpha1.SuiteError, testingv1alpha1.ReasonErrorOnInitialization, err.Error() + time.Now().String())
 			r.Client.Status().Update(ctx, suiteCopy)
 			return reconcile.Result{}, errors.Wrapf(err, "while looking for matching test definitions for suite [%s]", suiteCopy.Name)
 		}

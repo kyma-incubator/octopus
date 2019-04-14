@@ -13,6 +13,6 @@ spec:
       - name: test-ls
         namespace: default
       - name: test-pwd
-        namespace: default # what if namespace is missing?
+        namespace: default # what if namespace is missing? - validation will fail - this is fine
       - name: test-does-not-exist
         namespace: ns-from-moon
