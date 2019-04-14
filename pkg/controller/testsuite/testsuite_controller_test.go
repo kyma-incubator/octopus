@@ -321,7 +321,7 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 			}
 
 
-			if found {
+			if !found {
 				return errors.New("suite should in in failed status because of the initialization error")
 			}
 			return nil
