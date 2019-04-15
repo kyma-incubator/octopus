@@ -16,7 +16,7 @@ import (
 func TestIsUninitialized(t *testing.T) {
 	sut := status.Service{}
 
-	t.Run("return true when empty", func(t *testing.T) {
+	t.Run("return true when suite has empty status", func(t *testing.T) {
 		assert.True(t, sut.IsUninitialized(v1alpha1.ClusterTestSuite{}))
 	})
 
