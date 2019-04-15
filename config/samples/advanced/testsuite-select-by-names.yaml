@@ -5,7 +5,7 @@ kind: ClusterTestSuite
 metadata:
   labels:
     controller-tools.k8s.io: "1.0"
-  name: testsuite-all
+  name: testsuite-selected-by-names
 spec:
   count: 1
   selectors:
@@ -13,6 +13,6 @@ spec:
       - name: test-ls
         namespace: default
       - name: test-pwd
-        namespace: default # what if namespace is missing? - validation will fail - this is fine
+        namespace: default # validation will fail if namespace is missing
       - name: test-does-not-exist
         namespace: ns-from-moon

@@ -2,6 +2,9 @@ package fetcher
 
 import (
 	"context"
+	"fmt"
+	"github.com/kyma-incubator/octopus/pkg/humanerr"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
@@ -37,8 +40,13 @@ func (s *Definition) findByNames(ctx context.Context, suite v1alpha1.ClusterTest
 	for _, tRef := range suite.Spec.Selectors.MatchNames {
 		def := v1alpha1.TestDefinition{}
 		err := s.reader.Get(ctx, types.NamespacedName{Name: tRef.Name, Namespace: tRef.Namespace}, &def)
-		if err != nil {
-			return nil, errors.Wrapf(err, "while fetching test definition from selector [name: %s, namespace: %s]", tRef.Name, tRef.Namespace)
+		wrappedErr := errors.Wrapf(err, "while fetching test definition from selector [name: %s, namespace: %s]", tRef.Name, tRef.Namespace)
+		switch {
+		case err == nil:
+		case k8serrors.IsNotFound(err):
+			return nil, humanerr.NewError(wrappedErr, fmt.Sprintf("Test Definition [name: %s, namespace: %s] does not exist", tRef.Name, tRef.Namespace))
+		default:
+			return nil, humanerr.NewError(wrappedErr, "Internal error")
 		}
 		list = append(list, def)
 	}
