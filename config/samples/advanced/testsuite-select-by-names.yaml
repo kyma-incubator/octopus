@@ -14,5 +14,4 @@ spec:
         namespace: default
       - name: test-pwd
         namespace: default # validation will fail if namespace is missing
-      - name: test-does-not-exist
-        namespace: ns-from-moon
+
