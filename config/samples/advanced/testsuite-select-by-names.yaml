@@ -1,0 +1,17 @@
+---
+
+apiVersion: testing.kyma-project.io/v1alpha1
+kind: ClusterTestSuite
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: testsuite-selected-by-names
+spec:
+  count: 1
+  selectors:
+    matchNames:
+      - name: test-ls
+        namespace: default
+      - name: test-pwd
+        namespace: default # validation will fail if namespace is missing
+

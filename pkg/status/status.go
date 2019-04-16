@@ -223,7 +223,17 @@ func (s *Service) IsUninitialized(suite v1alpha1.ClusterTestSuite) bool {
 		return true
 	}
 
-	return s.isConditionSet(suite.Status, v1alpha1.SuiteUninitialized)
+	if s.isConditionSet(suite.Status, v1alpha1.SuiteUninitialized) {
+		return true
+	}
+
+	// if error occurred on initialization we treat suite as Uninitialized
+	for _, cond := range suite.Status.Conditions {
+		if cond.Type == v1alpha1.SuiteError && cond.Status == v1alpha1.StatusTrue && cond.Reason == v1alpha1.ReasonErrorOnInitialization {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Service) IsFinished(suite v1alpha1.ClusterTestSuite) bool {

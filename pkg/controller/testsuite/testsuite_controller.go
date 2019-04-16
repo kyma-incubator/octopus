@@ -17,6 +17,8 @@ package testsuite
 
 import (
 	"context"
+	"github.com/kyma-incubator/octopus/pkg/humanerr"
+	"go.uber.org/multierr"
 	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -143,7 +145,8 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 		logSuite.Info("Initialize suite")
 		testDefs, err := r.definitionService.FindMatching(*suiteCopy)
 		if err != nil {
-			return reconcile.Result{}, errors.Wrapf(err, "while looking for matching test definitions for suite [%s]", suiteCopy.Name)
+			statErr := r.setErrorStatus(ctx, suiteCopy, testingv1alpha1.ReasonErrorOnInitialization, err)
+			return reconcile.Result{}, errors.Wrapf(multierr.Combine(err, statErr), "while looking for matching test definitions for suite [%s]", suiteCopy.Name)
 		}
 		currStatus, err := r.statusService.InitializeTests(*suiteCopy, testDefs)
 		if err != nil {
@@ -210,6 +213,16 @@ func (r *ReconcileTestSuite) ensureStatusIsUpToDate(ctx context.Context, suite t
 	return r.statusService.EnsureStatusIsUpToDate(suite, pods)
 }
 
+func (r *ReconcileTestSuite) setErrorStatus(ctx context.Context, suite *testingv1alpha1.ClusterTestSuite, reason string, err error) error {
+	msg := ""
+	if hErr, ok := humanerr.GetHumanReadableError(err); ok {
+		msg = hErr.Message
+	}
+
+	r.statusService.SetSuiteCondition(&suite.Status, testingv1alpha1.SuiteError, reason, msg)
+	return r.Client.Status().Update(ctx, suite)
+}
+
 // dependencies
 type TestScheduler interface {
 	TrySchedule(suite testingv1alpha1.ClusterTestSuite) (*corev1.Pod, *testingv1alpha1.TestSuiteStatus, error)
@@ -224,6 +237,7 @@ type SuiteStatusService interface {
 	InitializeTests(suite testingv1alpha1.ClusterTestSuite, defs []testingv1alpha1.TestDefinition) (*testingv1alpha1.TestSuiteStatus, error)
 	IsUninitialized(suite testingv1alpha1.ClusterTestSuite) bool
 	IsFinished(suite testingv1alpha1.ClusterTestSuite) bool
+	SetSuiteCondition(stat *testingv1alpha1.TestSuiteStatus, tp testingv1alpha1.TestSuiteConditionType, reason, msg string)
 }
 
 type TestDefinitionService interface {
