@@ -11,13 +11,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"time"
 )
 
-//go:generate go run ./../../vendor/github.com/vektra/mockery/cmd/mockery/mockery.go -name=StatusProvider -output=automock -outpkg=automock -case=underscore
-type StatusProvider interface {
-	MarkAsScheduled(status v1alpha1.TestSuiteStatus, testName, testNs, podName string) (v1alpha1.TestSuiteStatus, error)
-	GetExecutionsInProgress(suite v1alpha1.ClusterTestSuite) []v1alpha1.TestExecution
-}
 
 // nextTestSelectorStrategy
 type nextTestSelectorStrategy interface {
@@ -29,9 +25,8 @@ type podNameProvider interface {
 	GetName(suite v1alpha1.ClusterTestSuite, def v1alpha1.TestDefinition) (string, error)
 }
 
-func NewService(statusProvider StatusProvider, reader client.Reader, writer client.Writer, scheme *runtime.Scheme, logger logr.Logger) *Service {
+func NewService(reader client.Reader, writer client.Writer, scheme *runtime.Scheme, logger logr.Logger) *Service {
 	return &Service{
-		statusProvider: statusProvider,
 		reader:         reader,
 		writer:         writer,
 		scheme:         scheme,
@@ -40,7 +35,6 @@ func NewService(statusProvider StatusProvider, reader client.Reader, writer clie
 }
 
 type Service struct {
-	statusProvider StatusProvider
 	reader         client.Reader
 	writer         client.Writer
 	scheme         *runtime.Scheme
@@ -64,11 +58,12 @@ func (s *Service) TrySchedule(suite v1alpha1.ClusterTestSuite) (*v1.Pod, *v1alph
 		return nil, nil, err
 	}
 
-	curr, err := s.statusProvider.MarkAsScheduled(suite.Status, tr.Name, tr.Namespace, pod.Name)
+	// todo: use nowprovider
+	curr, err := suite.Status.MarkAsScheduled(tr.Name, tr.Namespace, pod.Name, time.Now())
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "while marking suite [%s] as Scheduled", suite.Name)
 	}
-	return pod, &curr, nil
+	return pod, curr, nil
 }
 
 func (s *Service) getDefinition(name, ns string) (v1alpha1.TestDefinition, error) {
@@ -82,7 +77,7 @@ func (s *Service) getDefinition(name, ns string) (v1alpha1.TestDefinition, error
 
 func (s *Service) getNextToSchedule(suite v1alpha1.ClusterTestSuite) (*v1alpha1.TestResult, error) {
 	suite = s.normalizeSuite(suite)
-	running := s.statusProvider.GetExecutionsInProgress(suite)
+	running := suite.GetExecutionsInProgress()
 
 	logSuite := s.log.WithValues("suite", suite.Name)
 	if len(running) >= int(suite.Spec.Concurrency) {

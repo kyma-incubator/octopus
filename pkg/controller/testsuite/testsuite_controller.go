@@ -28,7 +28,6 @@ import (
 	testingv1alpha1 "github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 	"github.com/kyma-incubator/octopus/pkg/fetcher"
 	"github.com/kyma-incubator/octopus/pkg/scheduler"
-	"github.com/kyma-incubator/octopus/pkg/status"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -50,15 +49,13 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	statusSvc := status.NewService(time.Now)
-	schedulerSvc := scheduler.NewService(statusSvc, mgr.GetClient(), mgr.GetClient(), mgr.GetScheme(), logf.Log.WithName("scheduler"))
+	schedulerSvc := scheduler.NewService(mgr.GetClient(), mgr.GetClient(), mgr.GetScheme(), logf.Log.WithName("scheduler"))
 	podSvc := fetcher.NewForTestingPod(mgr.GetClient())
 
 	return &ReconcileTestSuite{
 		Client:            mgr.GetClient(),
 		scheme:            mgr.GetScheme(),
 		scheduler:         schedulerSvc,
-		statusService:     statusSvc,
 		definitionService: fetcher.NewForDefinition(mgr.GetClient()),
 		podSvc:            podSvc,
 		log:               logf.Log.WithName("cts_controller"),

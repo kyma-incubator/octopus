@@ -1,7 +1,6 @@
 package status
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
@@ -152,7 +151,7 @@ func (s *Service) adjustSuiteCondition(stat v1alpha1.TestSuiteStatus) v1alpha1.T
 	if newCond == prevCond {
 		return stat
 	}
-	s.SetSuiteCondition(&stat, newCond, "", "")
+	stat.SetSuiteCondition(newCond, "", "")
 	switch newCond {
 	case v1alpha1.SuiteFailed:
 		fallthrough
@@ -170,10 +169,10 @@ func (s *Service) InitializeTests(suite v1alpha1.ClusterTestSuite, defs []v1alph
 	out.StartTime = &metav1.Time{Time: s.nowProvider()}
 	if len(defs) == 0 {
 		out.CompletionTime = &metav1.Time{Time: s.nowProvider()}
-		s.SetSuiteCondition(out, v1alpha1.SuiteSucceeded, "", "")
+		out.SetSuiteCondition(v1alpha1.SuiteSucceeded, "", "")
 		return out, nil
 	}
-	s.SetSuiteCondition(out, v1alpha1.SuiteRunning, "", "")
+	out.SetSuiteCondition(v1alpha1.SuiteRunning, "", "")
 	out.Results = make([]v1alpha1.TestResult, len(defs))
 	for idx, def := range defs {
 		out.Results[idx] = v1alpha1.TestResult{
@@ -188,68 +187,39 @@ func (s *Service) InitializeTests(suite v1alpha1.ClusterTestSuite, defs []v1alph
 	return out, nil
 }
 
-func (s *Service) SetSuiteCondition(stat *v1alpha1.TestSuiteStatus, tp v1alpha1.TestSuiteConditionType, reason, msg string) {
-	set := false
-	for idx := 0; idx < len(stat.Conditions); idx++ {
-		curr := &stat.Conditions[idx]
-		if curr.Type == tp {
-			curr.Status = v1alpha1.StatusTrue
-			curr.Reason = reason
-			curr.Message = msg
-			set = true
-		} else {
-			curr.Status = v1alpha1.StatusFalse
-			curr.Reason = ""
-			curr.Message = ""
-		}
-	}
-	if set {
-		return
-	}
+//
+//func (s *Service) IsUninitialized(suite v1alpha1.ClusterTestSuite) bool {
+//	if len(suite.Status.Conditions) == 0 {
+//		return true
+//	}
+//
+//	if s.isConditionSet(suite.Status, v1alpha1.SuiteUninitialized) {
+//		return true
+//	}
+//
+//	// if error occurred on initialization we treat suite as Uninitialized
+//	for _, cond := range suite.Status.Conditions {
+//		if cond.Type == v1alpha1.SuiteError && cond.Status == v1alpha1.StatusTrue && cond.Reason == v1alpha1.ReasonErrorOnInitialization {
+//			return true
+//		}
+//	}
+//	return false
+//}
 
-	if stat.Conditions == nil {
-		stat.Conditions = make([]v1alpha1.TestSuiteCondition, 0)
-	}
-	stat.Conditions = append(stat.Conditions, v1alpha1.TestSuiteCondition{
-		Type:    tp,
-		Status:  v1alpha1.StatusTrue,
-		Reason:  reason,
-		Message: msg,
-	})
-}
+//func (s *Service) IsFinished(suite v1alpha1.ClusterTestSuite) bool {
+//	return s.isConditionSet(suite.Status, v1alpha1.SuiteError) ||
+//		s.isConditionSet(suite.Status, v1alpha1.SuiteFailed) ||
+//		s.isConditionSet(suite.Status, v1alpha1.SuiteSucceeded)
+//}
 
-func (s *Service) IsUninitialized(suite v1alpha1.ClusterTestSuite) bool {
-	if len(suite.Status.Conditions) == 0 {
-		return true
-	}
-
-	if s.isConditionSet(suite.Status, v1alpha1.SuiteUninitialized) {
-		return true
-	}
-
-	// if error occurred on initialization we treat suite as Uninitialized
-	for _, cond := range suite.Status.Conditions {
-		if cond.Type == v1alpha1.SuiteError && cond.Status == v1alpha1.StatusTrue && cond.Reason == v1alpha1.ReasonErrorOnInitialization {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *Service) IsFinished(suite v1alpha1.ClusterTestSuite) bool {
-	return s.isConditionSet(suite.Status, v1alpha1.SuiteError) ||
-		s.isConditionSet(suite.Status, v1alpha1.SuiteFailed) ||
-		s.isConditionSet(suite.Status, v1alpha1.SuiteSucceeded)
-}
-
-func (s *Service) isConditionSet(stat v1alpha1.TestSuiteStatus, tp v1alpha1.TestSuiteConditionType) bool {
-	for _, cond := range stat.Conditions {
-		if cond.Type == tp && cond.Status == v1alpha1.StatusTrue {
-			return true
-		}
-	}
-	return false
-}
+//func (s *Service) isConditionSet(stat v1alpha1.TestSuiteStatus, tp v1alpha1.TestSuiteConditionType) bool {
+//	for _, cond := range stat.Conditions {
+//		if cond.Type == tp && cond.Status == v1alpha1.StatusTrue {
+//			return true
+//		}
+//	}
+//	return false
+//}
 
 func (s *Service) getSuiteCondition(stat v1alpha1.TestSuiteStatus) v1alpha1.TestSuiteConditionType {
 	for _, cond := range stat.Conditions {
@@ -260,29 +230,29 @@ func (s *Service) getSuiteCondition(stat v1alpha1.TestSuiteStatus) v1alpha1.Test
 	return v1alpha1.SuiteUninitialized
 }
 
-func (s *Service) GetExecutionsInProgress(suite v1alpha1.ClusterTestSuite) []v1alpha1.TestExecution {
-	out := make([]v1alpha1.TestExecution, 0)
-	for _, tr := range suite.Status.Results {
-		for _, ex := range tr.Executions {
-			if ex.PodPhase == v1.PodPending || ex.PodPhase == v1.PodRunning {
-				out = append(out, ex)
-			}
-		}
-	}
-	return out
-}
+//func (s *Service) GetExecutionsInProgress(suite v1alpha1.ClusterTestSuite) []v1alpha1.TestExecution {
+//	out := make([]v1alpha1.TestExecution, 0)
+//	for _, tr := range suite.Status.Results {
+//		for _, ex := range tr.Executions {
+//			if ex.PodPhase == v1.PodPending || ex.PodPhase == v1.PodRunning {
+//				out = append(out, ex)
+//			}
+//		}
+//	}
+//	return out
+//}
 
-func (s *Service) MarkAsScheduled(status v1alpha1.TestSuiteStatus, testName, testNs, podName string) (v1alpha1.TestSuiteStatus, error) {
-	for idx, tr := range status.Results {
-		if tr.Name == testName && tr.Namespace == testNs {
-			status.Results[idx].Status = v1alpha1.TestScheduled
-			status.Results[idx].Executions = append(status.Results[idx].Executions, v1alpha1.TestExecution{
-				ID:        podName,
-				StartTime: &metav1.Time{Time: s.nowProvider()},
-			})
-
-			return status, nil
-		}
-	}
-	return v1alpha1.TestSuiteStatus{}, fmt.Errorf("cannot mark test as a scheduled [testName: %s, testNs: %s, podName: %s]", testName, testNs, podName)
-}
+//func (s *Service) MarkAsScheduled(status v1alpha1.TestSuiteStatus, testName, testNs, podName string) (v1alpha1.TestSuiteStatus, error) {
+//	for idx, tr := range status.Results {
+//		if tr.Name == testName && tr.Namespace == testNs {
+//			status.Results[idx].Status = v1alpha1.TestScheduled
+//			status.Results[idx].Executions = append(status.Results[idx].Executions, v1alpha1.TestExecution{
+//				ID:        podName,
+//				StartTime: &metav1.Time{Time: s.nowProvider()},
+//			})
+//
+//			return status, nil
+//		}
+//	}
+//	return v1alpha1.TestSuiteStatus{}, fmt.Errorf("cannot mark test as a scheduled [testName: %s, testNs: %s, podName: %s]", testName, testNs, podName)
+//}
