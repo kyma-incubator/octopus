@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"github.com/kyma-incubator/octopus/pkg/status"
 )
 
 // Add creates a new ClusterTestSuite Controller and adds it to the Manager with default RBAC. The Manager will set fields on the Controller
@@ -49,6 +50,7 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
+	statusSvc := status.NewService(time.Now)
 	schedulerSvc := scheduler.NewService(mgr.GetClient(), mgr.GetClient(), mgr.GetScheme(), logf.Log.WithName("scheduler"))
 	podSvc := fetcher.NewForTestingPod(mgr.GetClient())
 
@@ -56,6 +58,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 		Client:            mgr.GetClient(),
 		scheme:            mgr.GetScheme(),
 		scheduler:         schedulerSvc,
+		statusService:     statusSvc,
 		definitionService: fetcher.NewForDefinition(mgr.GetClient()),
 		podSvc:            podSvc,
 		log:               logf.Log.WithName("cts_controller"),
@@ -138,7 +141,7 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 	suiteCopy := suite.DeepCopy()
 	logSuite := r.log.WithValues("suite", suiteCopy.Name)
 
-	if r.statusService.IsUninitialized(*suiteCopy) {
+	if suiteCopy.IsUninitialized() {
 		logSuite.Info("Initialize suite")
 		testDefs, err := r.definitionService.FindMatching(*suiteCopy)
 		if err != nil {
@@ -155,7 +158,7 @@ func (r *ReconcileTestSuite) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 		return reconcile.Result{Requeue: true, RequeueAfter: requeueAfterChanges}, nil
 	}
-	if r.statusService.IsFinished(*suiteCopy) {
+	if suiteCopy.IsFinished() {
 		logSuite.Info("Do nothing, suite is finished")
 		return reconcile.Result{}, nil
 	}
@@ -216,7 +219,7 @@ func (r *ReconcileTestSuite) setErrorStatus(ctx context.Context, suite *testingv
 		msg = hErr.Message
 	}
 
-	r.statusService.SetSuiteCondition(&suite.Status, testingv1alpha1.SuiteError, reason, msg)
+	suite.Status.SetSuiteCondition(testingv1alpha1.SuiteError, reason, msg)
 	return r.Client.Status().Update(ctx, suite)
 }
 
@@ -232,9 +235,9 @@ type TestReporter interface {
 type SuiteStatusService interface {
 	EnsureStatusIsUpToDate(suite testingv1alpha1.ClusterTestSuite, pods []corev1.Pod) (*testingv1alpha1.TestSuiteStatus, error)
 	InitializeTests(suite testingv1alpha1.ClusterTestSuite, defs []testingv1alpha1.TestDefinition) (*testingv1alpha1.TestSuiteStatus, error)
-	IsUninitialized(suite testingv1alpha1.ClusterTestSuite) bool
-	IsFinished(suite testingv1alpha1.ClusterTestSuite) bool
-	SetSuiteCondition(stat *testingv1alpha1.TestSuiteStatus, tp testingv1alpha1.TestSuiteConditionType, reason, msg string)
+	//IsUninitialized(suite testingv1alpha1.ClusterTestSuite) bool
+	//IsFinished(suite testingv1alpha1.ClusterTestSuite) bool
+	//SetSuiteCondition(stat *testingv1alpha1.TestSuiteStatus, tp testingv1alpha1.TestSuiteConditionType, reason, msg string)
 }
 
 type TestDefinitionService interface {

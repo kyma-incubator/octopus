@@ -19,6 +19,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"time"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestTryScheduleHappyPath(t *testing.T) {
@@ -29,8 +31,8 @@ func TestTryScheduleHappyPath(t *testing.T) {
 
 	scheduledSuite := uninitializedSuite.DeepCopy()
 	//scheduledSuite.Status.Conditions[0].Type = v1alpha1.SuiteRunning
-	scheduledSuite.Status.Results[0].Executions = []v1alpha1.TestExecution{{ID: "oct-tp-test-all-test-name-0", PodPhase: v12.PodRunning}}
-	scheduledSuite.Status.Results[0].Status = v1alpha1.TestScheduled
+	//scheduledSuite.Status.Results[0].Executions = []v1alpha1.TestExecution{{ID: "oct-tp-test-all-test-name-0", PodPhase: v12.PodRunning}}
+	//scheduledSuite.Status.Results[0].Status = v1alpha1.TestScheduled
 
 	fakeCli, sch, err := getFakeClient(&givenTd)
 
@@ -45,8 +47,11 @@ func TestTryScheduleHappyPath(t *testing.T) {
 	assert.NotNil(t, pod)
 
 	// todo assert status
-	assert.NotNil(t, status)
-	//assert.Equal(t, scheduledSuite.Status, *status)
+	now := time.Now()
+	expectedStatus, _ := scheduledSuite.Status.MarkAsScheduled("test-name", "test-namespace", "oct-tp-test-all-test-name-0", now)
+	// do not compare the start time - todo: make nowProvider in the scheduler???
+	status.Results[0].Executions[0].StartTime  = &metav1.Time{Time: now}
+	assert.Equal(t, expectedStatus, status)
 
 	var actualPodList v12.PodList
 	require.NoError(t, fakeCli.List(context.TODO(), &client.ListOptions{Namespace: "test-namespace"}, &actualPodList))
@@ -67,7 +72,6 @@ func TestTryScheduleHappyPath(t *testing.T) {
 	require.NotNil(t, pod.OwnerReferences[0].Controller)
 	assert.True(t, *pod.OwnerReferences[0].Controller)
 	assert.Equal(t, "test-all", pod.OwnerReferences[0].Name)
-	// todo: assert state is marked as scheduled
 }
 
 func TestTryScheduleNoTestToExecuteNow(t *testing.T) {
