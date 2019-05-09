@@ -113,7 +113,7 @@ func TestFindMatching(t *testing.T) {
 
 	t.Run("return internal error when fetching selected tests failed", func(t *testing.T) {
 		// GIVEN
-		errClient := &mockErrReader{err:errors.New("some error")}
+		errClient := &mockErrReader{err: errors.New("some error")}
 		service := fetcher.NewForDefinition(errClient)
 
 		// WHEN

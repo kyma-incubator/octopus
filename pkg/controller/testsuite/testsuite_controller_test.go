@@ -483,8 +483,8 @@ func (r *mockPodReconciler) getLogger() logr.Logger {
 
 func startMockPodController(mgr manager.Manager, enforceConcurrentlyRunningPods int) (*mockPodReconciler, error) {
 	pr := &mockPodReconciler{
-		cli: mgr.GetClient(),
-		mtx: sync.Mutex{},
+		cli:                                    mgr.GetClient(),
+		mtx:                                    sync.Mutex{},
 		enforceNumberOfConcurrentlyRunningPods: enforceConcurrentlyRunningPods,
 		reconcileAfter:                         time.Millisecond * 100,
 	}
