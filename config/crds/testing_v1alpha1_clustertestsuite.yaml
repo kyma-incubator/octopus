@@ -53,10 +53,10 @@ spec:
               description: Decide which tests to execute. If not provided execute
                 all tests
               properties:
-                matchLabels:
-                  description: 'Find test definitions by its labels. TestDefinition
-                    should match AT LEAST one expression listed here to be executed.
-                    For a complete grammar see: https://github.com/kubernetes/apimachinery/blob/master/pkg/labels/selector.go#L811'
+                matchLabelExpressions:
+                  description: 'Find test definitions by their labels. TestDefinition
+                    must match AT LEAST one expression listed here to be executed.
+                    For the complete grammar see: https://github.com/kubernetes/apimachinery/blob/master/pkg/labels/selector.go#L811'
                   items:
                     type: string
                   type: array
