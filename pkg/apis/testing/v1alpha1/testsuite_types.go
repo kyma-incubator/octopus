@@ -108,9 +108,10 @@ type TestSuiteSpec struct {
 type TestsSelector struct {
 	// Find test definitions by it's name
 	MatchNames []TestDefReference `json:"matchNames,omitempty"`
-	// Find test definitions by it's labels.
-	// TestDefinition should have AT LEAST one label listed here to be executed.
-	MatchLabels []string `json:"matchLabels,omitempty"`
+	// Find test definitions by its labels.
+	// TestDefinition should match AT LEAST one expression listed here to be executed.
+	// For a complete grammar see: https://github.com/kubernetes/apimachinery/blob/master/pkg/labels/selector.go#L811
+	MatchLabelExpressions []string `json:"matchLabels,omitempty"`
 }
 
 type TestDefReference struct {

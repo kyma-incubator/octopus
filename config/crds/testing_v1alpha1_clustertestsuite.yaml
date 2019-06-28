@@ -54,8 +54,9 @@ spec:
                 all tests
               properties:
                 matchLabels:
-                  description: Find test definitions by it's labels. TestDefinition
-                    should have AT LEAST one label listed here to be executed.
+                  description: 'Find test definitions by its labels. TestDefinition
+                    should match AT LEAST one expression listed here to be executed.
+                    For a complete grammar see: https://github.com/kubernetes/apimachinery/blob/master/pkg/labels/selector.go#L811'
                   items:
                     type: string
                   type: array

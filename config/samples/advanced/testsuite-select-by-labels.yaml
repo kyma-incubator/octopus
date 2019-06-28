@@ -1,0 +1,14 @@
+---
+apiVersion: testing.kyma-project.io/v1alpha1
+kind: ClusterTestSuite
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: testsuite-selected-by-labels
+spec:
+  count: 1
+  selectors:
+    matchLabelExpressions:
+      - "test-duration!=long" # do not execute long running tests
+      - "component in (frontend, backend)" # execute all tests for frontend and backend, regardless of their execution time.
+
