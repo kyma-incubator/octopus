@@ -29,18 +29,18 @@ func (s *Definition) FindMatching(suite v1alpha1.ClusterTestSuite) ([]v1alpha1.T
 	ctx := context.TODO()
 	acc := make(uniqueTestDefinitions)
 
-	err := s.findByNames(ctx, suite, &acc)
+	err := s.findByNames(ctx, suite, acc)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.findByLabelExpressions(ctx, suite, &acc)
+	err = s.findByLabelExpressions(ctx, suite, acc)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(acc) > 0 {
-		return acc.toList(), nil
+		return acc.getValues(), nil
 	}
 
 	var list v1alpha1.TestDefinitionList
@@ -50,7 +50,7 @@ func (s *Definition) FindMatching(suite v1alpha1.ClusterTestSuite) ([]v1alpha1.T
 	return list.Items, nil
 }
 
-func (s *Definition) findByNames(ctx context.Context, suite v1alpha1.ClusterTestSuite, acc *uniqueTestDefinitions) error {
+func (s *Definition) findByNames(ctx context.Context, suite v1alpha1.ClusterTestSuite, acc uniqueTestDefinitions) error {
 	for _, tRef := range suite.Spec.Selectors.MatchNames {
 		def := v1alpha1.TestDefinition{}
 		err := s.reader.Get(ctx, types.NamespacedName{Name: tRef.Name, Namespace: tRef.Namespace}, &def)
@@ -62,12 +62,12 @@ func (s *Definition) findByNames(ctx context.Context, suite v1alpha1.ClusterTest
 		default:
 			return humanerr.NewError(wrappedErr, "Internal error")
 		}
-		(*acc)[def.UID] = def
+		acc[def.UID] = def
 	}
 	return nil
 }
 
-func (s *Definition) findByLabelExpressions(ctx context.Context, suite v1alpha1.ClusterTestSuite, acc *uniqueTestDefinitions) error {
+func (s *Definition) findByLabelExpressions(ctx context.Context, suite v1alpha1.ClusterTestSuite, acc uniqueTestDefinitions) error {
 	for _, expr := range suite.Spec.Selectors.MatchLabelExpressions {
 		selector, err := labels.Parse(expr)
 		if err != nil {
@@ -78,13 +78,13 @@ func (s *Definition) findByLabelExpressions(ctx context.Context, suite v1alpha1.
 			return errors.Wrapf(err, "while fetching test definition from selector [expression: %s]", expr)
 		}
 		for _, def := range list.Items {
-			(*acc)[def.UID] = def
+			acc[def.UID] = def
 		}
 	}
 	return nil
 }
 
-func (m uniqueTestDefinitions) toList() []v1alpha1.TestDefinition {
+func (m uniqueTestDefinitions) getValues() []v1alpha1.TestDefinition {
 	var list []v1alpha1.TestDefinition
 	for _, def := range m {
 		list = append(list, def)
