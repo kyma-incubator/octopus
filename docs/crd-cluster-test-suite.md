@@ -31,7 +31,7 @@ This table lists all the possible parameters of a given resource together with t
 | **metadata.name** |    **YES**   | Specifies the name of the CR. |
 | **spec.selectors** | **NO** | Defines which tests should be executed. You can define tests by specifying their names or labels. Selectors are additive. If not defined, all tests from all Namespaces are executed.
 | **spec.selectors.matchNames** | **NO** | Lists TestDefinitions to execute. For every element on the list, specify **name** and **namespace** that refers to a TestDefinition. |
-| **spec.selectors.matchLabels** | **NO** | Lists labels that match labels of TestDefinitions to execute. A TestDefinition is selected if at least one label matches. This feature is not yet implemented. | 
+| **spec.selectors.matchLabelExpressions** | **NO** | Lists of label expressions that match labels of TestDefinitions to execute. A TestDefinition is selected if at least one label expression matches. For the complete grammar see: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels | 
 | **spec.concurrency** | **NO** | Defines how many tests can be executed at the same time, which depends on cluster size and its load. The default value is `1`.
 | **spec.suiteTimeout** | **NO** | Defines the maximal suite duration after which test executions are interrupted and marked as **Failed**. The default value is one hour. This feature is not yet implemented. 
 | **spec.count** | **NO** | Defines how many times every test should be executed. **Spec.Count** and **Spec.MaxRetries** are mutually exclusive. The default value is `1`.  
