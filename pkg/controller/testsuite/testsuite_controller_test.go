@@ -330,6 +330,91 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 
 	})
 
+	t.Run("selective testing", func(t *testing.T) {
+		// GIVEN
+		// Setup the Manager and Controller
+		mgr, err := manager.New(cfg, manager.Options{})
+		require.NoError(t, err)
+		c := mgr.GetClient()
+
+		testNs := generateTestNs()
+		ctx := context.Background()
+
+		require.NoError(t, add(mgr, newReconciler(mgr)))
+		stopMgr, mgrStopped := StartTestManager(t, mgr)
+
+		defer func() {
+			close(stopMgr)
+			mgrStopped.Wait()
+		}()
+
+		logf.SetLogger(logf.ZapLogger(false))
+
+		podReconciler, err := startMockPodController(mgr, 0)
+		require.NoError(t, err)
+
+		// WHEN
+		ns := &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: testNs,
+			},
+		}
+		err = c.Create(ctx, ns)
+		require.NoError(t, err)
+		defer cleanupK8sObject(ctx, c, ns)
+
+		testA := getSequentialTest("test-a", testNs)
+		err = c.Create(ctx, testA)
+		require.NoError(t, err)
+		defer cleanupK8sObject(ctx, c, testA)
+
+		testB := getSequentialTest("test-b", testNs)
+		testB.Labels = map[string]string{"test": "true"}
+		err = c.Create(ctx, testB)
+		require.NoError(t, err)
+		defer cleanupK8sObject(ctx, c, testB)
+
+		testC := getSequentialTest("test-c", testNs)
+		testC.Labels = map[string]string{"test": "false"}
+		err = c.Create(ctx, testC)
+		require.NoError(t, err)
+		defer cleanupK8sObject(ctx, c, testC)
+
+		suite := &testingv1alpha1.ClusterTestSuite{
+			ObjectMeta: metav1.ObjectMeta{Name: "suite-selective"},
+			Spec: testingv1alpha1.TestSuiteSpec{
+				Concurrency: 1,
+				Count:       1,
+				Selectors: testingv1alpha1.TestsSelector{
+					MatchNames: []testingv1alpha1.TestDefReference{
+						{
+							Name:      "test-a",
+							Namespace: testNs,
+						},
+					},
+					MatchLabelExpressions: []string{
+						"test=true",
+					},
+				},
+			},
+		}
+		err = c.Create(ctx, suite)
+		require.NoError(t, err)
+		defer cleanupK8sObject(ctx, c, suite)
+
+		// THEN
+		repeat.FuncAtMost(t, func() error {
+			return checkIfsuiteIsSucceeded(ctx, c, "suite-selective")
+		}, defaultAssertionTimeout)
+
+		repeat.FuncAtMost(t, func() error {
+			return checkIfPodsWereCreated(ctx, c, testNs, []string{
+				"oct-tp-suite-selective-test-a-0",
+				"oct-tp-suite-selective-test-b-0"})
+		}, defaultAssertionTimeout)
+
+		assertThatPodsCreatedSequentially(t, podReconciler.getAppliedChanges())
+	})
 }
 
 func assertThatPodsCreatedConcurrently(t *testing.T, appliedChanges []podStatusChanges) {
