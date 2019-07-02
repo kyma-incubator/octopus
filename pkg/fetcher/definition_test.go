@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/kyma-incubator/octopus/pkg/humanerr"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 
@@ -42,21 +41,21 @@ func TestFindMatching(t *testing.T) {
 		// GIVEN
 		testA := &v1alpha1.TestDefinition{
 			ObjectMeta: v1.ObjectMeta{
-				UID:       uuid.NewUUID(),
+				UID:       "test-uid",
 				Name:      "test-a",
 				Namespace: "test-a",
 			},
 		}
 		testB := &v1alpha1.TestDefinition{
 			ObjectMeta: v1.ObjectMeta{
-				UID:       uuid.NewUUID(),
+				UID:       "test-uid",
 				Name:      "test-b",
 				Namespace: "test-b",
 			},
 		}
 		testC := &v1alpha1.TestDefinition{
 			ObjectMeta: v1.ObjectMeta{
-				UID:       uuid.NewUUID(),
+				UID:       "test-uid",
 				Name:      "test-c",
 				Namespace: "test-c",
 			},
@@ -95,7 +94,7 @@ func TestFindMatching(t *testing.T) {
 		// GIVEN
 		testA := &v1alpha1.TestDefinition{
 			ObjectMeta: v1.ObjectMeta{
-				UID:       uuid.NewUUID(),
+				UID:       "test-uid",
 				Name:      "test-a",
 				Namespace: "test-a",
 				Labels: map[string]string{
@@ -105,7 +104,7 @@ func TestFindMatching(t *testing.T) {
 		}
 		testB := &v1alpha1.TestDefinition{
 			ObjectMeta: v1.ObjectMeta{
-				UID:       uuid.NewUUID(),
+				UID:       "test-uid",
 				Name:      "test-b",
 				Namespace: "test-b",
 				Labels: map[string]string{
@@ -115,7 +114,7 @@ func TestFindMatching(t *testing.T) {
 		}
 		testC := &v1alpha1.TestDefinition{
 			ObjectMeta: v1.ObjectMeta{
-				UID:       uuid.NewUUID(),
+				UID:       "test-uid",
 				Name:      "test-c",
 				Namespace: "test-c",
 				Labels: map[string]string{
@@ -157,7 +156,7 @@ func TestFindMatching(t *testing.T) {
 		// GIVEN
 		testA := &v1alpha1.TestDefinition{
 			ObjectMeta: v1.ObjectMeta{
-				UID:       uuid.NewUUID(),
+				UID:       "test-uid",
 				Name:      "test-a",
 				Namespace: "test-a",
 				Labels: map[string]string{
@@ -167,7 +166,7 @@ func TestFindMatching(t *testing.T) {
 		}
 		testB := &v1alpha1.TestDefinition{
 			ObjectMeta: v1.ObjectMeta{
-				UID:       uuid.NewUUID(),
+				UID:       "test-uid",
 				Name:      "test-b",
 				Namespace: "test-b",
 				Labels: map[string]string{
@@ -177,7 +176,7 @@ func TestFindMatching(t *testing.T) {
 		}
 		testC := &v1alpha1.TestDefinition{
 			ObjectMeta: v1.ObjectMeta{
-				UID:       uuid.NewUUID(),
+				UID:       "test-uid",
 				Name:      "test-c",
 				Namespace: "test-c",
 				Labels: map[string]string{
