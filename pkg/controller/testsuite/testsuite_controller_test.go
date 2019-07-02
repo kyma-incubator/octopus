@@ -503,7 +503,7 @@ type mockPodReconciler struct {
 	cli client.Client
 	// mutex protecting access to applied changes slice
 	mtx sync.Mutex
-	// chronologically list of pod changes. Use getter to access it autside the struct
+	// chronologically list of pod changes. Use getter to access it outside the struct
 	appliedChanges                         []podStatusChanges
 	enforceNumberOfConcurrentlyRunningPods int
 	reconcileAfter                         time.Duration
