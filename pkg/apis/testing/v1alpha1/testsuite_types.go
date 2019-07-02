@@ -110,7 +110,7 @@ type TestsSelector struct {
 	MatchNames []TestDefReference `json:"matchNames,omitempty"`
 	// Find test definitions by their labels.
 	// TestDefinition must match AT LEAST one expression listed here to be executed.
-	// For the complete grammar see: https://github.com/kubernetes/apimachinery/blob/master/pkg/labels/selector.go#L811
+	// For the complete grammar see: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
 	MatchLabelExpressions []string `json:"matchLabelExpressions,omitempty"`
 }
 
