@@ -158,3 +158,7 @@ type TestExecution struct {
 func init() {
 	SchemeBuilder.Register(&ClusterTestSuite{}, &ClusterTestSuiteList{})
 }
+
+func (in ClusterTestSuite) HasSelector() bool {
+	return len(s.Spec.Selectors.MatchNames) > 0 || len(s.Spec.Selectors.MatchLabelExpressions) > 0
+}
