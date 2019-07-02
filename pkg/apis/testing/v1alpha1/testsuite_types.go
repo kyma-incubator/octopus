@@ -160,5 +160,5 @@ func init() {
 }
 
 func (in ClusterTestSuite) HasSelector() bool {
-	return len(s.Spec.Selectors.MatchNames) > 0 || len(s.Spec.Selectors.MatchLabelExpressions) > 0
+	return len(in.Spec.Selectors.MatchNames) > 0 || len(in.Spec.Selectors.MatchLabelExpressions) > 0
 }

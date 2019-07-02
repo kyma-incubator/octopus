@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/kyma-incubator/octopus/pkg/humanerr"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
@@ -41,21 +42,21 @@ func TestFindMatching(t *testing.T) {
 		// GIVEN
 		testA := &v1alpha1.TestDefinition{
 			ObjectMeta: v1.ObjectMeta{
-				UID:       "test-uid",
+				UID:       "test-uid-a",
 				Name:      "test-a",
 				Namespace: "test-a",
 			},
 		}
 		testB := &v1alpha1.TestDefinition{
 			ObjectMeta: v1.ObjectMeta{
-				UID:       "test-uid",
+				UID:       "test-uid-b",
 				Name:      "test-b",
 				Namespace: "test-b",
 			},
 		}
 		testC := &v1alpha1.TestDefinition{
 			ObjectMeta: v1.ObjectMeta{
-				UID:       "test-uid",
+				UID:       "test-uid-c",
 				Name:      "test-c",
 				Namespace: "test-c",
 			},
@@ -94,7 +95,7 @@ func TestFindMatching(t *testing.T) {
 		// GIVEN
 		testA := &v1alpha1.TestDefinition{
 			ObjectMeta: v1.ObjectMeta{
-				UID:       "test-uid",
+				UID:       "test-uid-a",
 				Name:      "test-a",
 				Namespace: "test-a",
 				Labels: map[string]string{
@@ -104,7 +105,7 @@ func TestFindMatching(t *testing.T) {
 		}
 		testB := &v1alpha1.TestDefinition{
 			ObjectMeta: v1.ObjectMeta{
-				UID:       "test-uid",
+				UID:       "test-uid-b",
 				Name:      "test-b",
 				Namespace: "test-b",
 				Labels: map[string]string{
@@ -114,7 +115,7 @@ func TestFindMatching(t *testing.T) {
 		}
 		testC := &v1alpha1.TestDefinition{
 			ObjectMeta: v1.ObjectMeta{
-				UID:       "test-uid",
+				UID:       "test-uid-c",
 				Name:      "test-c",
 				Namespace: "test-c",
 				Labels: map[string]string{
@@ -126,13 +127,8 @@ func TestFindMatching(t *testing.T) {
 		fakeCli := fake.NewFakeClientWithScheme(sch,
 			testA, testB, testC,
 		)
-		mockReader := &mockListReader{
-			fakeCli: fakeCli,
-			listResults: [][]v1alpha1.TestDefinition{
-				{*testC},
-				{*testA},
-			},
-		}
+		mockReader := &mockListReader{fakeCli: fakeCli}
+
 		service := fetcher.NewForDefinition(mockReader)
 		// WHEN
 		out, err := service.FindMatching(v1alpha1.ClusterTestSuite{
@@ -152,11 +148,11 @@ func TestFindMatching(t *testing.T) {
 		assert.Contains(t, out, *testC)
 	})
 
-	t.Run("return tests returns unique results", func(t *testing.T) {
+	t.Run("return tests returns unique result across all selectors", func(t *testing.T) {
 		// GIVEN
 		testA := &v1alpha1.TestDefinition{
 			ObjectMeta: v1.ObjectMeta{
-				UID:       "test-uid",
+				UID:       "test-uid-a",
 				Name:      "test-a",
 				Namespace: "test-a",
 				Labels: map[string]string{
@@ -164,36 +160,11 @@ func TestFindMatching(t *testing.T) {
 				},
 			},
 		}
-		testB := &v1alpha1.TestDefinition{
-			ObjectMeta: v1.ObjectMeta{
-				UID:       "test-uid",
-				Name:      "test-b",
-				Namespace: "test-b",
-				Labels: map[string]string{
-					"test": "false",
-				},
-			},
-		}
-		testC := &v1alpha1.TestDefinition{
-			ObjectMeta: v1.ObjectMeta{
-				UID:       "test-uid",
-				Name:      "test-c",
-				Namespace: "test-c",
-				Labels: map[string]string{
-					"other": "123",
-				},
-			},
-		}
 
 		fakeCli := fake.NewFakeClientWithScheme(sch,
-			testA, testB, testC,
+			testA,
 		)
-		mockReader := &mockListReader{
-			fakeCli: fakeCli,
-			listResults: [][]v1alpha1.TestDefinition{
-				{*testA},
-			},
-		}
+		mockReader := &mockListReader{fakeCli: fakeCli}
 		service := fetcher.NewForDefinition(mockReader)
 		// WHEN
 		out, err := service.FindMatching(v1alpha1.ClusterTestSuite{
@@ -282,9 +253,7 @@ func (m *mockErrReader) List(ctx context.Context, opts *client.ListOptions, list
 }
 
 type mockListReader struct {
-	fakeCli     client.Reader
-	listResults [][]v1alpha1.TestDefinition
-	calls       uint
+	fakeCli client.Reader
 }
 
 func (m *mockListReader) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
@@ -292,8 +261,23 @@ func (m *mockListReader) Get(ctx context.Context, key client.ObjectKey, obj runt
 }
 
 func (m *mockListReader) List(ctx context.Context, opts *client.ListOptions, list runtime.Object) error {
-	result := m.listResults[m.calls]
-	m.calls++
-	list.(*v1alpha1.TestDefinitionList).Items = append(list.(*v1alpha1.TestDefinitionList).Items, result...)
+	// fakeCli has a bug fixed in controller-runtime 0.1.11 and it does not filter by labels. This mock can be removed
+	// when we update to new controller-runtime
+	// See: https://github.com/kubernetes-sigs/controller-runtime/issues/293
+	if opts.LabelSelector == nil {
+		return m.fakeCli.List(ctx, opts, list)
+	}
+
+	result := v1alpha1.TestDefinitionList{}
+	err := m.fakeCli.List(ctx, opts, &result)
+	if err != nil {
+		return err
+	}
+
+	for _, td := range result.Items {
+		if opts.LabelSelector.Matches(labels.Set(td.Labels)) {
+			list.(*v1alpha1.TestDefinitionList).Items = append(list.(*v1alpha1.TestDefinitionList).Items, td)
+		}
+	}
 	return nil
 }
