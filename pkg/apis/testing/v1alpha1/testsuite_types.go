@@ -108,9 +108,10 @@ type TestSuiteSpec struct {
 type TestsSelector struct {
 	// Find test definitions by it's name
 	MatchNames []TestDefReference `json:"matchNames,omitempty"`
-	// Find test definitions by it's labels.
-	// TestDefinition should have AT LEAST one label listed here to be executed.
-	MatchLabels []string `json:"matchLabels,omitempty"`
+	// Find test definitions by their labels.
+	// TestDefinition must match AT LEAST one expression listed here to be executed.
+	// For the complete grammar see: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
+	MatchLabelExpressions []string `json:"matchLabelExpressions,omitempty"`
 }
 
 type TestDefReference struct {
@@ -156,4 +157,8 @@ type TestExecution struct {
 
 func init() {
 	SchemeBuilder.Register(&ClusterTestSuite{}, &ClusterTestSuiteList{})
+}
+
+func (in ClusterTestSuite) HasSelector() bool {
+	return len(in.Spec.Selectors.MatchNames) > 0 || len(in.Spec.Selectors.MatchLabelExpressions) > 0
 }

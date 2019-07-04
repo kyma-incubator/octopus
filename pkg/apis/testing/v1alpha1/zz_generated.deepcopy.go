@@ -311,8 +311,8 @@ func (in *TestsSelector) DeepCopyInto(out *TestsSelector) {
 		*out = make([]TestDefReference, len(*in))
 		copy(*out, *in)
 	}
-	if in.MatchLabels != nil {
-		in, out := &in.MatchLabels, &out.MatchLabels
+	if in.MatchLabelExpressions != nil {
+		in, out := &in.MatchLabelExpressions, &out.MatchLabelExpressions
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
