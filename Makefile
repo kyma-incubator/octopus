@@ -52,6 +52,7 @@ vet:
 .PHONY: generate
 generate:
 	go generate ./pkg/... ./cmd/...
+	./hack/update-codegen.sh
 
 # Build the docker image
 .PHONY: docker-build
