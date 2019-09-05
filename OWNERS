@@ -9,7 +9,7 @@ filters:
       - jasiu001
       - adamwalach
       - polskikiel
-  "\\.md$|/docs/|^milv\.config\.yaml$"
+  '\.md$|/docs/|^milv\.config\.yaml$':
     approvers:
       - kazydek
       - klaudiagrz
