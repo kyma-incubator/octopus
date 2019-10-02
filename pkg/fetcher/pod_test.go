@@ -16,8 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/api/core/v1"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestGetPodsForSuite(t *testing.T) {
@@ -40,25 +39,13 @@ func TestGetPodsForSuite(t *testing.T) {
 	mockReader := &automock.Reader{}
 	defer mockReader.AssertExpectations(t)
 
-	listOptionMatcher := mock.MatchedBy(func(listOptions *client.ListOptions) bool {
-		if listOptions.Namespace != "" {
-			return false
-		}
-		if !listOptions.LabelSelector.Matches(labels.Set(givenPod.Labels)) {
-			return false
-		}
-		return true
-	})
+	sch, err := v1alpha1.SchemeBuilder.Build()
+	require.NoError(t, err)
+	require.NoError(t, v1.AddToScheme(sch))
 
-	mockReader.On("List", mock.Anything, listOptionMatcher, mock.Anything).
-		Return(nil).
-		Run(func(args mock.Arguments) {
-			podList, ok := args.Get(2).(*v1.PodList)
-			if ok {
-				podList.Items = []v1.Pod{givenPod}
-			}
-		})
-	sut := fetcher.NewForTestingPod(mockReader)
+	cli := fake.NewFakeClientWithScheme(sch, &givenPod)
+
+	sut := fetcher.NewForTestingPod(cli)
 	// WHEN
 	actualPods, err := sut.GetPodsForSuite(context.TODO(), givenSuite)
 	// THEN

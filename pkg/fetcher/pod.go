@@ -32,10 +32,10 @@ func (s *TestPod) GetPodsForSuite(ctx context.Context, suite v1alpha1.ClusterTes
 		return nil, errors.Wrapf(err, "while creating '%s' label requirement", v1alpha1.LabelKeySuiteName)
 	}
 
-	if err := s.cli.List(ctx, &client.ListOptions{
+	if err := s.cli.List(ctx, &out, &client.ListOptions{
 		Namespace:     v1.NamespaceAll,
 		LabelSelector: labels.NewSelector().Add(*reqCreatedBy, *reqSuiteName),
-	}, &out); err != nil {
+	}); err != nil {
 		return nil, errors.Wrapf(err, "while getting pods for suite [%s]", suite.Name)
 	}
 

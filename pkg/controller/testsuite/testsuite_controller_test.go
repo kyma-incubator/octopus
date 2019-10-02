@@ -30,7 +30,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/go-logr/logr"
-	"github.com/kyma-project/kyma/tests/acceptance/pkg/repeat"
+	"github.com/kyma-incubator/octopus/pkg/repeat"
 	"github.com/stretchr/testify/require"
 	"k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -107,11 +107,11 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 		require.NoError(t, err)
 		defer cleanupK8sObject(ctx, c, getSequentialTest("test-b", testNs))
 		// THEN
-		repeat.FuncAtMost(t, func() error {
+		repeat.AssertFuncAtMost(t, func() error {
 			return checkIfsuiteIsSucceeded(ctx, c, "suite-test-repeat")
 		}, defaultAssertionTimeout)
 
-		repeat.FuncAtMost(t, func() error {
+		repeat.AssertFuncAtMost(t, func() error {
 			return checkIfPodsWereCreated(ctx, c, testNs, []string{
 				"oct-tp-suite-test-repeat-test-a-0",
 				"oct-tp-suite-test-repeat-test-a-1",
@@ -176,11 +176,11 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 		defer cleanupK8sObject(ctx, c, getConcurrentTest("test-conc-b", testNs))
 
 		// THEN
-		repeat.FuncAtMost(t, func() error {
+		repeat.AssertFuncAtMost(t, func() error {
 			return checkIfsuiteIsSucceeded(ctx, c, "suite-test-concurrency")
 		}, defaultAssertionTimeout)
 
-		repeat.FuncAtMost(t, func() error {
+		repeat.AssertFuncAtMost(t, func() error {
 			return checkIfPodsWereCreated(ctx, c, testNs, []string{
 				"oct-tp-suite-test-concurrency-test-conc-a-0",
 				"oct-tp-suite-test-concurrency-test-conc-a-1",
@@ -250,11 +250,11 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 		defer cleanupK8sObject(ctx, c, getSequentialTest("test-c", testNs))
 
 		// THEN
-		repeat.FuncAtMost(t, func() error {
+		repeat.AssertFuncAtMost(t, func() error {
 			return checkIfsuiteIsSucceeded(ctx, c, "suite-test-sequential")
 		}, defaultAssertionTimeout)
 
-		repeat.FuncAtMost(t, func() error {
+		repeat.AssertFuncAtMost(t, func() error {
 			return checkIfPodsWereCreated(ctx, c, testNs, []string{
 				"oct-tp-suite-test-sequential-test-a-0",
 				"oct-tp-suite-test-sequential-test-b-0",
@@ -306,7 +306,7 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 
 		// THEN
 		expectedErrMsg := "Test Definition [name: does-not-exist, namespace: does-not-exist] does not exist"
-		repeat.FuncAtMost(t, func() error {
+		repeat.AssertFuncAtMost(t, func() error {
 			var actualSuite testingv1alpha1.ClusterTestSuite
 			if err := c.Get(ctx, types.NamespacedName{Name: "suite-errored"}, &actualSuite); err != nil {
 				return err
@@ -403,11 +403,11 @@ func TestReconcileClusterTestSuite(t *testing.T) {
 		defer cleanupK8sObject(ctx, c, suite)
 
 		// THEN
-		repeat.FuncAtMost(t, func() error {
+		repeat.AssertFuncAtMost(t, func() error {
 			return checkIfsuiteIsSucceeded(ctx, c, "suite-selective")
 		}, defaultAssertionTimeout)
 
-		repeat.FuncAtMost(t, func() error {
+		repeat.AssertFuncAtMost(t, func() error {
 			return checkIfPodsWereCreated(ctx, c, testNs, []string{
 				"oct-tp-suite-selective-test-a-0",
 				"oct-tp-suite-selective-test-b-0"})
@@ -471,9 +471,9 @@ func checkIfsuiteIsSucceeded(ctx context.Context, reader client.Reader, suiteNam
 
 func checkIfPodsWereCreated(ctx context.Context, reader client.Reader, ns string, expectedPodNames []string) error {
 	actualPods := &v1.PodList{}
-	if err := reader.List(ctx, &client.ListOptions{
+	if err := reader.List(ctx, actualPods, &client.ListOptions{
 		Namespace: ns,
-	}, actualPods); err != nil {
+	}); err != nil {
 		return err
 	}
 

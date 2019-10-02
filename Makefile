@@ -36,7 +36,7 @@ deploy: manifests
 # Generate manifests e.g. CRD, RBAC etc.
 .PHONY: manifests
 manifests:
-	go run vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go all
+go run vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go crd rbac:roleName=manager-role webhook paths="./apis/..."
 
 # Run go fmt against code
 .PHONY: fmt
@@ -55,11 +55,12 @@ generate:
 
 # Build the docker image
 .PHONY: docker-build
-docker-build: resolve generate validate
+docker-build: resolve vendor-create generate validate
 	docker build . -t ${IMG}
 	docker tag ${IMG} ${IMG-CI}
 	@echo "updating kustomize image patch file for manager resource"
 	sed -i'' -e 's@image: .*@image: '"${IMG-CI}"'@' ./config/default/manager_image_patch.yaml
+	rm -rf vendor/
 
 # Push the docker image
 .PHONY: docker-push
@@ -70,12 +71,16 @@ docker-push:
 # Resolve dependencies
 .PHONY: resolve
 resolve:
-	dep ensure -v -vendor-only
+	go mod tidy
 
 # Executes the whole validation
 .PHONY: validate
 validate: fmt vet test
-	dep status
+	go mod verify
+
+.PHONY: vendor-create
+vendor-create:
+	go mod vendor
 
 # CI specified targets
 .PHONY: ci-pr
