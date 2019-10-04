@@ -17,7 +17,7 @@ Octopus provides extensions for kubectl. For more information, read [this](docs/
 
 Use the following tools to set up the project:
 
-* Version 1.11 or higher of [Go](https://golang.org/dl/)
+* Version 1.12 or higher of [Go](https://golang.org/dl/)
 * Version 2.0.0 of [Kustomize](https://github.com/kubernetes-sigs/kustomize)
 * Version 1.0.7 of [Kubebuilder](https://github.com/kubernetes-sigs/kubebuilder)
 * The latest version of [Docker](https://www.docker.com/)

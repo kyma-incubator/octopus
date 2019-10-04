@@ -1,6 +1,6 @@
 module github.com/kyma-incubator/octopus
 
-go 1.11
+go 1.12
 
 require (
 	github.com/go-logr/logr v0.1.0
@@ -8,7 +8,7 @@ require (
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.3.0
-	github.com/vektra/mockery v0.0.0-20181123154057-e78b021dcbb5
+	github.com/vektra/mockery v0.0.0-20181123154057-e78b021dcbb5 // indirect
 	go.uber.org/multierr v1.1.0
 	golang.org/x/net v0.0.0-20190812203447-cdfb69ac37fc
 	k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
