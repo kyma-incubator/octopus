@@ -53,6 +53,13 @@ func TestGetPodsForSuite(t *testing.T) {
 	require.Len(t, actualPods, 1)
 	assert.Equal(t, givenPod, actualPods[0])
 
+	// WHEN
+	actualPods, err = sut.GetPodsForSuite(context.TODO(), v1alpha1.ClusterTestSuite{ObjectMeta: v12.ObjectMeta{
+		Name: "wrong-name",
+	}})
+	// THEN
+	require.NoError(t, err)
+	require.Len(t, actualPods, 0)
 }
 
 func TestGetPodsForSuiteOnError(t *testing.T) {
