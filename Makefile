@@ -55,7 +55,7 @@ generate:
 
 # Build the docker image
 .PHONY: docker-build
-docker-build: resolve vendor-create generate validate
+docker-build: vendor-create generate validate
 	docker build . -t ${IMG}
 	docker tag ${IMG} ${IMG-CI}
 	@echo "updating kustomize image patch file for manager resource"
@@ -66,12 +66,6 @@ docker-build: resolve vendor-create generate validate
 .PHONY: docker-push
 docker-push:
 	docker push ${IMG-CI}
-
-### Custom targets
-# Resolve dependencies
-.PHONY: resolve
-resolve:
-	go mod tidy
 
 # Executes the whole validation
 .PHONY: validate
