@@ -46,5 +46,13 @@ To test your changes before each commit, use the following command:
 make validate
 ```
 
+### Regenerate mocks
+
+To regenerate mocks in this project, use the following script:
+
+```bash
+./hack/mocks-gen.sh
+```
+
 ### Upgrade chart
 Chart `chart/octopus` is upgraded manually, by copying respective files from the `config` directory.

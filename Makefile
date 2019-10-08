@@ -50,8 +50,9 @@ vet:
 
 # Generate code
 .PHONY: generate
-generate:
+generate: deepcopy-gen vendor-create
 	go generate ./pkg/... ./cmd/...
+	rm -rf vendor/
 
 # Build the docker image
 .PHONY: docker-build
@@ -60,7 +61,6 @@ docker-build: generate validate
 	docker tag ${IMG} ${IMG-CI}
 	@echo "updating kustomize image patch file for manager resource"
 	sed -i'' -e 's@image: .*@image: '"${IMG-CI}"'@' ./config/default/manager_image_patch.yaml
-	rm -rf vendor/
 
 # Push the docker image
 .PHONY: docker-push
@@ -92,4 +92,9 @@ ifeq (, $(shell which controller-gen))
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
+endif
+
+deepcopy-gen:
+ifeq (, $(shell which deepcopy-gen))
+	go get k8s.io/code-generator/cmd/deepcopy-gen@kubernetes-1.14.0
 endif
