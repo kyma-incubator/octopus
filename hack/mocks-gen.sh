@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
 
-for d in ./pkg/* ; do
-    cd "$d"
-    mockery -all -output=automock -outpkg=automock -case=underscore
-    cd ../..
-done
+cd ./pkg/scheduler
+mockery -name=StatusProvider -output=automock -outpkg=automock -case=underscore

@@ -52,7 +52,6 @@ vet:
 .PHONY: generate
 generate: deepcopy-gen vendor-create
 	go generate ./pkg/... ./cmd/...
-	rm -rf vendor/
 
 # Build the docker image
 .PHONY: docker-build
@@ -61,6 +60,7 @@ docker-build: generate validate
 	docker tag ${IMG} ${IMG-CI}
 	@echo "updating kustomize image patch file for manager resource"
 	sed -i'' -e 's@image: .*@image: '"${IMG-CI}"'@' ./config/default/manager_image_patch.yaml
+	rm -rf vendor/
 
 # Push the docker image
 .PHONY: docker-push
