@@ -4,8 +4,6 @@ import (
 	"context"
 	"testing"
 
-	rlog "sigs.k8s.io/controller-runtime/pkg/runtime/log"
-
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 	"github.com/kyma-incubator/octopus/pkg/scheduler"
 	"github.com/kyma-incubator/octopus/pkg/scheduler/automock"
@@ -19,6 +17,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	rlog "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 func TestTryScheduleHappyPath(t *testing.T) {
@@ -40,7 +39,7 @@ func TestTryScheduleHappyPath(t *testing.T) {
 
 	require.NoError(t, err)
 
-	sut := scheduler.NewService(mockStatusProvider, fakeCli, fakeCli, sch, rlog.NullLogger{})
+	sut := scheduler.NewService(mockStatusProvider, fakeCli, fakeCli, sch, rlog.Log)
 
 	// WHEN
 	pod, status, err := sut.TrySchedule(uninitializedSuite)
@@ -50,7 +49,7 @@ func TestTryScheduleHappyPath(t *testing.T) {
 	assert.Equal(t, scheduledSuite.Status, *status)
 
 	var actualPodList v12.PodList
-	require.NoError(t, fakeCli.List(context.TODO(), &client.ListOptions{Namespace: "test-namespace"}, &actualPodList))
+	require.NoError(t, fakeCli.List(context.TODO(), &actualPodList, &client.ListOptions{Namespace: "test-namespace"}))
 	assert.Contains(t, actualPodList.Items, *pod)
 
 	assert.Equal(t, "oct-tp-test-all-test-name-0", pod.Name)
@@ -143,7 +142,7 @@ func TestTryScheduleErrorOnSchedulingPod(t *testing.T) {
 	defer mockWriter.AssertExpectations(t)
 	mockWriter.On("Create", mock.Anything, mock.Anything).Return(errors.New("some error"))
 
-	sut := scheduler.NewService(mockStatusProvider, fakeCli, mockWriter, sch, rlog.NullLogger{})
+	sut := scheduler.NewService(mockStatusProvider, fakeCli, mockWriter, sch, rlog.Log)
 
 	// WHEN
 	_, _, err = sut.TrySchedule(uninitializedSuite)
@@ -169,7 +168,7 @@ func TestTryScheduleErrorOnUpdatingStatus(t *testing.T) {
 	fakeCli, sch, err := getFakeClient(&givenTd)
 	require.NoError(t, err)
 
-	sut := scheduler.NewService(mockStatusProvider, fakeCli, fakeCli, sch, rlog.NullLogger{})
+	sut := scheduler.NewService(mockStatusProvider, fakeCli, fakeCli, sch, rlog.Log)
 
 	// WHEN
 	_, _, err = sut.TrySchedule(uninitializedSuite)

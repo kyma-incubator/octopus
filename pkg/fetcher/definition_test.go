@@ -2,13 +2,12 @@ package fetcher_test
 
 import (
 	"context"
-	"errors"
 	"github.com/kyma-incubator/octopus/pkg/humanerr"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 
+	"errors"
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 	"github.com/kyma-incubator/octopus/pkg/fetcher"
 	"github.com/stretchr/testify/assert"
@@ -127,9 +126,7 @@ func TestFindMatching(t *testing.T) {
 		fakeCli := fake.NewFakeClientWithScheme(sch,
 			testA, testB, testC,
 		)
-		mockReader := &mockListReader{fakeCli: fakeCli}
-
-		service := fetcher.NewForDefinition(mockReader)
+		service := fetcher.NewForDefinition(fakeCli)
 		// WHEN
 		out, err := service.FindMatching(v1alpha1.ClusterTestSuite{
 			Spec: v1alpha1.TestSuiteSpec{
@@ -164,8 +161,7 @@ func TestFindMatching(t *testing.T) {
 		fakeCli := fake.NewFakeClientWithScheme(sch,
 			testA,
 		)
-		mockReader := &mockListReader{fakeCli: fakeCli}
-		service := fetcher.NewForDefinition(mockReader)
+		service := fetcher.NewForDefinition(fakeCli)
 		// WHEN
 		out, err := service.FindMatching(v1alpha1.ClusterTestSuite{
 			Spec: v1alpha1.TestSuiteSpec{
@@ -248,36 +244,6 @@ func (m *mockErrReader) Get(ctx context.Context, key client.ObjectKey, obj runti
 	return m.err
 }
 
-func (m *mockErrReader) List(ctx context.Context, opts *client.ListOptions, list runtime.Object) error {
+func (m *mockErrReader) List(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
 	return m.err
-}
-
-type mockListReader struct {
-	fakeCli client.Reader
-}
-
-func (m *mockListReader) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
-	return m.fakeCli.Get(ctx, key, obj)
-}
-
-func (m *mockListReader) List(ctx context.Context, opts *client.ListOptions, list runtime.Object) error {
-	// fakeCli has a bug fixed in controller-runtime 0.1.11 and it does not filter by labels. This mock can be removed
-	// when we update to new controller-runtime
-	// See: https://github.com/kubernetes-sigs/controller-runtime/issues/293
-	if opts.LabelSelector == nil {
-		return m.fakeCli.List(ctx, opts, list)
-	}
-
-	result := v1alpha1.TestDefinitionList{}
-	err := m.fakeCli.List(ctx, opts, &result)
-	if err != nil {
-		return err
-	}
-
-	for _, td := range result.Items {
-		if opts.LabelSelector.Matches(labels.Set(td.Labels)) {
-			list.(*v1alpha1.TestDefinitionList).Items = append(list.(*v1alpha1.TestDefinitionList).Items, td)
-		}
-	}
-	return nil
 }

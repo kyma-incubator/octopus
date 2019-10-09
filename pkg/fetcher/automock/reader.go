@@ -28,12 +28,12 @@ func (_m *Reader) Get(ctx context.Context, key types.NamespacedName, obj runtime
 }
 
 // List provides a mock function with given fields: ctx, opts, list
-func (_m *Reader) List(ctx context.Context, opts *client.ListOptions, list runtime.Object) error {
+func (_m *Reader) List(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
 	ret := _m.Called(ctx, opts, list)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *client.ListOptions, runtime.Object) error); ok {
-		r0 = rf(ctx, opts, list)
+	if rf, ok := ret.Get(0).(func(context.Context, runtime.Object, ...client.ListOption) error); ok {
+		r0 = rf(ctx, list, opts...)
 	} else {
 		r0 = ret.Error(0)
 	}

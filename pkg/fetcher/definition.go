@@ -73,7 +73,7 @@ func (s *Definition) findByLabelExpressions(ctx context.Context, suite v1alpha1.
 			return nil, errors.Wrapf(err, "while parsing label expression [expression: %s]", expr)
 		}
 		var list v1alpha1.TestDefinitionList
-		if err := s.reader.List(ctx, &client.ListOptions{LabelSelector: selector}, &list); err != nil {
+		if err := s.reader.List(ctx, &list, &client.ListOptions{LabelSelector: selector}); err != nil {
 			return nil, errors.Wrapf(err, "while fetching test definition from selector [expression: %s]", expr)
 		}
 		result = append(result, list.Items...)
@@ -99,7 +99,7 @@ func (s *Definition) unique(slices ...[]v1alpha1.TestDefinition) []v1alpha1.Test
 
 func (s *Definition) findAll(ctx context.Context, suite v1alpha1.ClusterTestSuite) ([]v1alpha1.TestDefinition, error) {
 	var list v1alpha1.TestDefinitionList
-	if err := s.reader.List(ctx, &client.ListOptions{Namespace: ""}, &list); err != nil {
+	if err := s.reader.List(ctx, &list, &client.ListOptions{Namespace: ""}); err != nil {
 		return nil, errors.Wrap(err, "while listing test definitions")
 	}
 	return list.Items, nil

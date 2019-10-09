@@ -13,7 +13,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-//go:generate go run ./../../vendor/github.com/vektra/mockery/cmd/mockery/mockery.go -name=StatusProvider -output=automock -outpkg=automock -case=underscore
 type StatusProvider interface {
 	MarkAsScheduled(status v1alpha1.TestSuiteStatus, testName, testNs, podName string) (v1alpha1.TestSuiteStatus, error)
 	GetExecutionsInProgress(suite v1alpha1.ClusterTestSuite) []v1alpha1.TestExecution

@@ -35,8 +35,8 @@ deploy: manifests
 
 # Generate manifests e.g. CRD, RBAC etc.
 .PHONY: manifests
-manifests:
-	go run vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go all
+manifests: controller-gen
+	controller-gen crd rbac:roleName=manager-role webhook paths="./apis/..."
 
 # Run go fmt against code
 .PHONY: fmt
@@ -50,32 +50,31 @@ vet:
 
 # Generate code
 .PHONY: generate
-generate:
+generate: deepcopy-gen vendor-create
 	go generate ./pkg/... ./cmd/...
 
 # Build the docker image
 .PHONY: docker-build
-docker-build: resolve generate validate
+docker-build: generate validate
 	docker build . -t ${IMG}
 	docker tag ${IMG} ${IMG-CI}
 	@echo "updating kustomize image patch file for manager resource"
 	sed -i'' -e 's@image: .*@image: '"${IMG-CI}"'@' ./config/default/manager_image_patch.yaml
+	rm -rf vendor/
 
 # Push the docker image
 .PHONY: docker-push
 docker-push:
 	docker push ${IMG-CI}
 
-### Custom targets
-# Resolve dependencies
-.PHONY: resolve
-resolve:
-	dep ensure -v -vendor-only
-
 # Executes the whole validation
 .PHONY: validate
 validate: fmt vet test
-	dep status
+	go mod verify
+
+.PHONY: vendor-create
+vendor-create:
+	go mod vendor
 
 # CI specified targets
 .PHONY: ci-pr
@@ -86,3 +85,16 @@ ci-master: docker-build docker-push
 
 .PHONY: ci-release
 ci-release: docker-build docker-push
+
+controller-gen:
+ifeq (, $(shell which controller-gen))
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.1
+CONTROLLER_GEN=$(GOBIN)/controller-gen
+else
+CONTROLLER_GEN=$(shell which controller-gen)
+endif
+
+deepcopy-gen:
+ifeq (, $(shell which deepcopy-gen))
+	go get k8s.io/code-generator/cmd/deepcopy-gen@kubernetes-1.14.0
+endif

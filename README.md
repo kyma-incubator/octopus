@@ -17,8 +17,7 @@ Octopus provides extensions for kubectl. For more information, read [this](docs/
 
 Use the following tools to set up the project:
 
-* Version 1.11 or higher of [Go](https://golang.org/dl/)
-* Version 0.5.1 or higher of [Dep](https://github.com/golang/dep)
+* Version 1.12 or higher of [Go](https://golang.org/dl/)
 * Version 2.0.0 of [Kustomize](https://github.com/kubernetes-sigs/kustomize)
 * Version 1.0.7 of [Kubebuilder](https://github.com/kubernetes-sigs/kubebuilder)
 * The latest version of [Docker](https://www.docker.com/)
@@ -34,7 +33,7 @@ helm install ./chart/octopus/ --name={release name} --namespace={namepsace}
 
 ### Install dependencies
 
-This project uses `dep` as the dependency manager. To install all required dependencies, use the following command:
+This project uses `go modules` as the dependency manager. To install all required dependencies, use the following command:
 ```bash
 make resolve
 ```
@@ -45,6 +44,14 @@ To test your changes before each commit, use the following command:
 
 ```bash
 make validate
+```
+
+### Regenerate mocks
+
+To regenerate mocks in this project, use the following script:
+
+```bash
+./hack/mocks-gen.sh
 ```
 
 ### Upgrade chart
