@@ -54,7 +54,7 @@ func TestGetPodsForSuite(t *testing.T) {
 	assert.Equal(t, givenPod, actualPods[0])
 
 	// WHEN
-	actualPods, err = sut.GetPodsForSuite(context.TODO(), v1alpha1.ClusterTestSuite{ObjectMeta: v12.ObjectMeta{
+	actualPods, err = sut.GetPodsForSuite(context.Background(), v1alpha1.ClusterTestSuite{ObjectMeta: v12.ObjectMeta{
 		Name: "wrong-name",
 	}})
 	// THEN
