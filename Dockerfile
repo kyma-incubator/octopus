@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM golang:1.11.4-alpine3.8 as builder
+FROM golang:1.12-alpine as builder
 
 # Copy in the go src
 WORKDIR /go/src/github.com/kyma-incubator/octopus
@@ -11,7 +11,9 @@ COPY vendor/ vendor/
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager github.com/kyma-incubator/octopus/cmd/manager
 
 # Copy the controller-manager into a thin image
-FROM alpine:3.8
+FROM scratch
 WORKDIR /
+
 COPY --from=builder /go/src/github.com/kyma-incubator/octopus/manager .
+
 ENTRYPOINT ["/manager"]
