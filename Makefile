@@ -50,7 +50,7 @@ vet:
 
 # Generate code
 .PHONY: generate
-generate: deepcopy-gen vendor-create
+generate: deepcopy-gen
 	go generate ./pkg/... ./cmd/...
 
 # Build the docker image
@@ -71,10 +71,6 @@ docker-push:
 .PHONY: validate
 validate: fmt vet test
 	go mod verify
-
-.PHONY: vendor-create
-vendor-create:
-	go mod vendor
 
 # CI specified targets
 .PHONY: ci-pr
