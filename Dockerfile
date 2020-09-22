@@ -7,7 +7,7 @@ COPY pkg/    pkg/
 COPY cmd/    cmd/
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager github.com/kyma-incubator/octopus/cmd/manager
+RUN go mod download && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager github.com/kyma-incubator/octopus/cmd/manager
 
 # Copy the controller-manager into a thin image
 FROM scratch
