@@ -92,5 +92,5 @@ endif
 
 deepcopy-gen:
 ifeq (, $(shell which deepcopy-gen))
-	go get k8s.io/code-generator/cmd/deepcopy-gen@kubernetes-1.14.0
+	go get k8s.io/code-generator/cmd/deepcopy-gen@v0.18.9
 endif
