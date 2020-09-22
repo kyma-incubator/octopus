@@ -14,5 +14,3 @@ require (
 	k8s.io/client-go v0.18.9
 	sigs.k8s.io/controller-runtime v0.5.11
 )
-
-replace github.com/appscode/jsonpatch => gomodules.xyz/jsonpatch/v2 v2.0.1
