@@ -14,5 +14,3 @@ require (
 	k8s.io/client-go v0.18.9
 	sigs.k8s.io/controller-runtime v0.6.3
 )
-
-replace sigs.k8s.io/controller-tools => sigs.k8s.io/controller-tools v0.4.0
