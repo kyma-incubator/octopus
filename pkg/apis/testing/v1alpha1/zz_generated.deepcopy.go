@@ -55,7 +55,7 @@ func (in *ClusterTestSuite) DeepCopyObject() runtime.Object {
 func (in *ClusterTestSuiteList) DeepCopyInto(out *ClusterTestSuiteList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ClusterTestSuite, len(*in))
@@ -131,7 +131,7 @@ func (in *TestDefinition) DeepCopyObject() runtime.Object {
 func (in *TestDefinitionList) DeepCopyInto(out *TestDefinitionList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]TestDefinition, len(*in))
