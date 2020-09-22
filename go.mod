@@ -9,7 +9,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	go.uber.org/multierr v1.6.0
 	golang.org/x/net v0.0.0-20200904194848-62affa334b73
-	gomodules.xyz/jsonpatch v2.0.0+incompatible // indirect
+	gomodules.xyz/jsonpatch/v2 v2.1.0
 	k8s.io/api v0.18.9
 	k8s.io/apimachinery v0.18.9
 	k8s.io/client-go v0.18.9
