@@ -88,7 +88,7 @@ ci-release: docker-build docker-push
 
 controller-gen:
 ifeq (, $(shell which controller-gen))
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.1
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.6.3
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
@@ -96,5 +96,5 @@ endif
 
 deepcopy-gen:
 ifeq (, $(shell which deepcopy-gen))
-	go get k8s.io/code-generator/cmd/deepcopy-gen@kubernetes-1.14.0
+	go get k8s.io/code-generator/cmd/deepcopy-gen@v0.18.9
 endif
