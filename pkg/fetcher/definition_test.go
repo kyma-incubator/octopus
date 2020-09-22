@@ -2,17 +2,19 @@ package fetcher_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/kyma-incubator/octopus/pkg/humanerr"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"testing"
 
 	"errors"
+
 	"github.com/kyma-incubator/octopus/pkg/apis/testing/v1alpha1"
 	"github.com/kyma-incubator/octopus/pkg/fetcher"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -40,6 +42,10 @@ func TestFindMatching(t *testing.T) {
 	t.Run("return tests selected by names", func(t *testing.T) {
 		// GIVEN
 		testA := &v1alpha1.TestDefinition{
+			TypeMeta: v1.TypeMeta{
+				Kind:       "TestDefinition",
+				APIVersion: "testing.kyma-project.io/v1alpha1",
+			},
 			ObjectMeta: v1.ObjectMeta{
 				UID:       "test-uid-a",
 				Name:      "test-a",
@@ -47,6 +53,10 @@ func TestFindMatching(t *testing.T) {
 			},
 		}
 		testB := &v1alpha1.TestDefinition{
+			TypeMeta: v1.TypeMeta{
+				Kind:       "TestDefinition",
+				APIVersion: "testing.kyma-project.io/v1alpha1",
+			},
 			ObjectMeta: v1.ObjectMeta{
 				UID:       "test-uid-b",
 				Name:      "test-b",
@@ -54,6 +64,10 @@ func TestFindMatching(t *testing.T) {
 			},
 		}
 		testC := &v1alpha1.TestDefinition{
+			TypeMeta: v1.TypeMeta{
+				Kind:       "TestDefinition",
+				APIVersion: "testing.kyma-project.io/v1alpha1",
+			},
 			ObjectMeta: v1.ObjectMeta{
 				UID:       "test-uid-c",
 				Name:      "test-c",

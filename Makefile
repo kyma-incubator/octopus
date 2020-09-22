@@ -50,7 +50,7 @@ vet:
 
 # Generate code
 .PHONY: generate
-generate: deepcopy-gen vendor-create
+generate: deepcopy-gen
 	go generate ./pkg/... ./cmd/...
 
 # Build the docker image
@@ -72,10 +72,6 @@ docker-push:
 validate: fmt vet test
 	go mod verify
 
-.PHONY: vendor-create
-vendor-create:
-	go mod vendor
-
 # CI specified targets
 .PHONY: ci-pr
 ci-pr: docker-build docker-push
@@ -88,7 +84,7 @@ ci-release: docker-build docker-push
 
 controller-gen:
 ifeq (, $(shell which controller-gen))
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.1
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.0
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
@@ -96,5 +92,5 @@ endif
 
 deepcopy-gen:
 ifeq (, $(shell which deepcopy-gen))
-	go get k8s.io/code-generator/cmd/deepcopy-gen@kubernetes-1.14.0
+	go get k8s.io/code-generator/cmd/deepcopy-gen@v0.18.9
 endif
