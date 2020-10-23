@@ -11,4 +11,4 @@ markComment: >
   This issue has been automatically marked as stale due to the lack of recent activity. It will soon be closed if no further activity occurs. Thank you for your contributions.
 # Comment to post when closing a stale issue. Set to `false` to disable
 closeComment: >
-  This issue has been automatically closed due to the lack of recent activity.
+  This issue has been automatically closed due to the lack of recent activity. 
