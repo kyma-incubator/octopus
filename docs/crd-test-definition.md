@@ -40,7 +40,7 @@ This table lists all the possible parameters of a given resource together with t
 | **spec.skip**     |    **NO**    | Indicates that a test should not be executed. The default value is `false`. This feature is not yet implemented. |
 | **spec.disableConcurrency** | **NO** | Disallows running the given test concurrently. The default value is `false`. 
 | **spec.timeout** | **NO** | Defines the maximal duration of a test, after which it is terminated and marked as **Failed**. This feature is not yet implemented.
-| **spec.description** | **NO** | Describes the test case in detail (e.g. scope, test scenario, edge cases, known limitations etc.).
+| **spec.description** | **NO** | Describes the details of the test case, such as the scope, the test scenario, edge cases, known limitations, etc.
 
 
 ## Related resources and components
