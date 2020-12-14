@@ -11,6 +11,12 @@ spec:
   skip: false
   disableConcurrency: false
   timeout: 3m
+  description: This is an example TestDefinition resource.
+    The test logic is wrapped in the referenced container image.
+    A TestDefinition resource will be executed as part of a TestSuite.
+
+    In this example, the test just executes the pwd command,
+    but there are no limitations to run any enhanced test logic.
   template:
     spec:
       containers:
