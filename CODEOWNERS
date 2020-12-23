@@ -19,7 +19,7 @@
 # The order is important. The last matching pattern in the file has the most precedence.
 
 # These are the default owners for the whole content of the `octopus` repository. The default owners are automatically added as reviewers when you open a pull request, unless different owners are specified in the file.
-* @aszecowka @mszostok @sjanota @piotrmiskiewicz @PK85 @jasiu001 @adamwalach @polskikiel
+* @piotrmiskiewicz @PK85 @jasiu001 @adamwalach @polskikiel
 
 # All .md files
-*.md @kazydek @klaudiagrz @tomekpapiernik @bszwarc
+*.md @kazydek @klaudiagrz
