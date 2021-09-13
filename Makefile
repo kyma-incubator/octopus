@@ -66,6 +66,18 @@ docker-build: generate validate
 .PHONY: docker-push
 docker-push:
 	docker push ${IMG-CI}
+	cosign version
+
+# Sign the docker image
+.PHONY: cosign-sign
+cosign-sign:
+ifeq ($(JOB_TYPE), postsubmit)
+	@echo "Sign image with Cosign"
+	cosign version
+	cosign sign -key ${KMS_KEY_URL} ${IMG-CI}
+else
+	@echo "Image signing skipped"
+endif
 
 # Executes the whole validation
 .PHONY: validate
@@ -77,10 +89,10 @@ validate: fmt vet test
 ci-pr: docker-build docker-push
 
 .PHONY: ci-master
-ci-master: docker-build docker-push
+ci-master: docker-build docker-push cosign-sign
 
 .PHONY: ci-release
-ci-release: docker-build docker-push
+ci-release: docker-build docker-push cosign-sign
 
 controller-gen:
 ifeq (, $(shell which controller-gen))
