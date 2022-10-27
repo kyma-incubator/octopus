@@ -1,3 +1,7 @@
+## :warning: **Archived**
+
+This repository has been deprecated and archived on Oct 27th, 2022.
+
 # Octopus
 
 ![](docs/assets/octopus.JPG)
